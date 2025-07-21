@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Search, PlusCircle, Clock, MapPin, CheckCircle, Heart, HandHelping } from 'lucide-react';
 import { db } from '../lib/firebase';
-import { collection, onSnapshot, Timestamp, addDoc, serverTimestamp, query, orderBy, where } from 'firebase/firestore';
+import { collection, onSnapshot, Timestamp, addDoc, serverTimestamp, query, orderBy } from 'firebase/firestore'; 
 import PostAidModal from './PostAidModal';
 import AidDetailsModal from './AidDetailsModal';
 
@@ -58,7 +58,7 @@ export default function AidView() {
 
     const handleAidSubmit = async (postData: AidPostData) => {
         const collectionName = postData.type === 'requests' ? 'aid_requests' : 'aid_offers';
-        const { type, ...data } = postData;
+        const { type: _, ...data } = postData;
         const newPost = { ...data, createdAt: serverTimestamp(), status: 'active' };
 
         await addDoc(collection(db, collectionName), newPost);
