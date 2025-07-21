@@ -7,6 +7,12 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Ahon Montalban",
   description: "A community-driven platform for flood monitoring and assistance in Rodriguez, Rizal.",
+  // Add this viewport configuration
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    viewportFit: 'cover',
+  },
 };
 
 export default function RootLayout({
