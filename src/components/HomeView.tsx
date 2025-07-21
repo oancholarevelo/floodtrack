@@ -112,16 +112,15 @@ export default function HomeView() {
       
       {/* LGU Announcements */}
       <Card>
-        <h3 className="text-lg font-bold text-gray-800 mb-2">LGU Announcements (Rodriguez DRRMO)</h3>
-        <div className="w-full h-[600px] flex justify-center">
+        <h3 className="text-lg font-bold text-gray-800 mb-2">Bagong Montalban</h3>
+        <div className="w-full h-[600px]">
             <iframe 
-                src="https://www.facebook.com/plugins/page.php?href=https%3A%2F%2Fwww.facebook.com%2FBangonBagongMontalban&tabs=timeline&height=600&small_header=false&adapt_container_width=true&hide_cover=false&show_facepile=true&appId" 
-                width="100%" 
-                height="100%" 
-                style={{border:'none', overflow:'auto'}} 
-                scrolling="yes" 
+                src="https://www.facebook.com/plugins/page.php?href=https%3A%2F%2Fwww.facebook.com%2FBangonBagongMontalban&tabs=timeline&height=600&small_header=false&adapt_container_width=true&hide_cover=false&show_facepile=true&appId"
+                className="w-full h-full"
+                style={{border:'none', overflow:'hidden'}} 
+                scrolling="no" 
                 frameBorder="0" 
-                allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share">
+                allow="encrypted-media">
             </iframe>
         </div>
       </Card>

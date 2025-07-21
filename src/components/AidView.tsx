@@ -107,33 +107,40 @@ export default function AidView() {
     );
 
     return (
-        <div className="p-4">
-            <div className="flex bg-gray-200 rounded-full p-1 mb-4">
-                <button 
-                    onClick={() => setActiveTab('requests')}
-                    className={`w-1/2 py-2 rounded-full text-sm font-semibold transition-colors ${activeTab === 'requests' ? 'bg-white text-cyan-700 shadow' : 'text-gray-600'}`}
-                >
-                    Need Help
-                </button>
-                <button 
-                    onClick={() => setActiveTab('offers')}
-                    className={`w-1/2 py-2 rounded-full text-sm font-semibold transition-colors ${activeTab === 'offers' ? 'bg-white text-cyan-700 shadow' : 'text-gray-600'}`}
-                >
-                    Offer Help
-                </button>
-            </div>
-            
-            <div className="relative mb-4">
-                <input type="text" placeholder="Search..." className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-full focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"/>
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+        <div className="h-full w-full relative flex flex-col">
+            {/* Non-scrolling top part */}
+            <div className="p-4 pb-0">
+                <div className="flex bg-gray-200 rounded-full p-1 mb-4">
+                    <button 
+                        onClick={() => setActiveTab('requests')}
+                        className={`w-1/2 py-2 rounded-full text-sm font-semibold transition-colors ${activeTab === 'requests' ? 'bg-white text-cyan-700 shadow' : 'text-gray-600'}`}
+                    >
+                        Need Help
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('offers')}
+                        className={`w-1/2 py-2 rounded-full text-sm font-semibold transition-colors ${activeTab === 'offers' ? 'bg-white text-cyan-700 shadow' : 'text-gray-600'}`}
+                    >
+                        Offer Help
+                    </button>
+                </div>
+                
+                <div className="relative mb-4">
+                    <input type="text" placeholder="Search..." className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-full focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"/>
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                </div>
             </div>
 
-            <div className="space-y-3">
-                {activeTab === 'requests' && aidRequests.map(item => <AidCard key={item.id} {...item} />)}
-                {activeTab === 'offers' && aidOffers.map(item => <AidCard key={item.id} {...item} />)}
+            {/* Scrollable list area */}
+            <div className="flex-grow overflow-y-auto px-4">
+                <div className="space-y-3">
+                    {activeTab === 'requests' && aidRequests.map(item => <AidCard key={item.id} {...item} />)}
+                    {activeTab === 'offers' && aidOffers.map(item => <AidCard key={item.id} {...item} />)}
+                </div>
             </div>
             
-            <div className="fixed bottom-20 right-4 z-10">
+            {/* Button positioned relative to the full-height container */}
+            <div className="absolute bottom-4 right-4 z-10">
                  <button 
                     onClick={() => setIsPostModalOpen(true)}
                     className="bg-cyan-600 text-white font-bold py-3 px-5 rounded-full shadow-lg hover:bg-cyan-700 flex items-center space-x-2 transition-transform duration-200 hover:scale-105">
