@@ -51,7 +51,7 @@ export default function Page() {
         {renderView()}
       </main>
 
-      <footer className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto p-2 z-20">
+      <footer className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto p-2 z-50 bg-transparent">
         <nav className="flex justify-around bg-white/70 backdrop-blur-lg rounded-full shadow-lg border border-slate-100">
           <NavItem view="home" icon={Home} label="Home" />
           <NavItem view="map" icon={Map} label="Flood Map" />
