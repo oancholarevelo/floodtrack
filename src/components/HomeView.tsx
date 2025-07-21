@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Sun, Cloud, CloudRain, Zap, Wind, AlertTriangle } from 'lucide-react';
+import { Wind, CloudRain, AlertTriangle } from 'lucide-react';
 import Image from 'next/image';
 
 interface WeatherData {
@@ -11,6 +11,12 @@ interface WeatherData {
     wind_kph: number;
     precip_mm: number;
 }
+
+const Card: React.FC<{children: React.ReactNode, className?: string}> = ({ children, className }) => (
+    <div className={`bg-white p-4 rounded-xl border border-gray-200 ${className}`}>
+        {children}
+    </div>
+);
 
 export default function HomeView() {
   const [weather, setWeather] = useState<WeatherData | null>(null);
@@ -51,35 +57,37 @@ export default function HomeView() {
   });
 
   return (
-    <div className="p-4 space-y-6 md:space-y-0 md:grid md:grid-cols-2 md:gap-6">
+    <div className="p-4 space-y-4">
       {/* Weather Card */}
-      <div className="bg-white p-4 rounded-xl shadow-md border border-gray-100 md:col-span-2">
+      <Card>
+        <div className="flex justify-between items-start">
+            <h2 className="text-sm font-semibold text-gray-500">CURRENT WEATHER</h2>
+            <p className="text-xs text-gray-400">Updated: {currentTime}</p>
+        </div>
         {loadingWeather ? (
           <div className="text-center text-gray-500 py-8">Loading weather...</div>
         ) : weather ? (
-          <>
-            <div className="flex justify-between items-start">
+          <div>
+            <div className="flex items-center space-x-4 mt-2">
+                <Image src={`https:${weather.condition.icon}`} alt={weather.condition.text} width={80} height={80} unoptimized/>
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-800">{weather.temp_c}°C</h2>
-                    <p className="text-gray-500">Feels like {weather.feelslike_c}°C</p>
-                    <p className="font-semibold text-gray-700 mt-1">{weather.condition.text}</p>
-                </div>
-                <div className="text-center">
-                    <Image src={`https:${weather.condition.icon}`} alt={weather.condition.text} width={64} height={64} unoptimized/>
-                    <p className="text-xs text-gray-500 mt-1">Updated: {currentTime}</p>
+                    <p className="text-5xl font-bold text-gray-800">{weather.temp_c}°C</p>
+                    <p className="text-gray-500 -mt-1">Feels like {weather.feelslike_c}°C</p>
                 </div>
             </div>
-            <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-200">
-                <div className="flex items-center space-x-2 text-gray-600">
-                    <Wind size={20} />
-                    <span>{weather.wind_kph} km/h</span>
+             <p className="font-bold text-lg text-cyan-700 mt-2">{weather.condition.text}</p>
+            
+            <div className="flex justify-around items-center mt-4 pt-4 border-t border-gray-100">
+                <div className="text-center text-gray-600">
+                    <Wind size={20} className="mx-auto mb-1 text-gray-400"/>
+                    <span className="text-sm font-medium">{weather.wind_kph} km/h</span>
                 </div>
-                 <div className="flex items-center space-x-2 text-gray-600">
-                    <CloudRain size={20} />
-                    <span>Precip: {weather.precip_mm} mm</span>
+                 <div className="text-center text-gray-600">
+                    <CloudRain size={20} className="mx-auto mb-1 text-gray-400"/>
+                    <span className="text-sm font-medium">Precip: {weather.precip_mm} mm</span>
                 </div>
             </div>
-          </>
+          </div>
         ) : (
           <div className="text-center text-red-500 py-8 flex flex-col items-center justify-center">
             <AlertTriangle className="mb-2" />
@@ -87,27 +95,27 @@ export default function HomeView() {
             <p className="text-xs text-gray-400 mt-1">Please add the API key to .env.local</p>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Live Weather Map */}
-      <div className="bg-white p-4 rounded-xl shadow-md border border-gray-100">
+      <Card>
         <h3 className="text-lg font-bold text-gray-800 mb-2">Live Weather & Typhoon Map</h3>
         <div className="w-full h-96 rounded-lg overflow-hidden">
             <iframe
                 width="100%"
                 height="100%"
-                src="https://embed.windy.com/embed2.html?lat=14.774&lon=121.139&detailLat=14.774&detailLon=121.139&width=650&height=450&zoom=10&level=surface&overlay=rain&product=ecmwf&menu=&message=true&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=kph&metricTemp=%C2%B0C&radarRange=-1"
+                src="https://embed.windy.com/embed2.html?lat=14.7169&lon=121.1244&detailLat=14.7169&detailLon=121.1244&width=650&height=450&zoom=10&level=surface&overlay=rain&product=ecmwf&menu=&message=true&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=kph&metricTemp=%C2%B°C&radarRange=-1"
                 frameBorder="0"
             ></iframe>
         </div>
-      </div>
+      </Card>
       
       {/* LGU Announcements */}
-      <div className="bg-white p-4 rounded-xl shadow-md border border-gray-100 flex flex-col">
+      <Card>
         <h3 className="text-lg font-bold text-gray-800 mb-2">LGU Announcements (Rodriguez DRRMO)</h3>
-        <div className="w-full flex-grow min-h-[400px]">
+        <div className="w-full h-[600px] flex justify-center">
             <iframe 
-                src="https://www.facebook.com/plugins/page.php?href=https%3A%2F%2Fwww.facebook.com%2FBangonBagongMontalban&tabs=timeline&width=500&height=500&small_header=false&adapt_container_width=true&hide_cover=false&show_facepile=true&appId" 
+                src="https://www.facebook.com/plugins/page.php?href=https%3A%2F%2Fwww.facebook.com%2FBangonBagongMontalban&tabs=timeline&height=600&small_header=false&adapt_container_width=true&hide_cover=false&show_facepile=true&appId" 
                 width="100%" 
                 height="100%" 
                 style={{border:'none', overflow:'auto'}} 
@@ -116,7 +124,7 @@ export default function HomeView() {
                 allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share">
             </iframe>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

@@ -1,12 +1,14 @@
 "use client";
 
 import { AidItemDoc } from './AidView';
+import { db } from '../lib/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
 
 interface AidDetailsModalProps {
     isOpen: boolean;
     onClose: () => void;
     item: AidItemDoc | null;
-}
+} 
 
 export default function AidDetailsModal({ isOpen, onClose, item }: AidDetailsModalProps) {
     if (!isOpen || !item) return null;
@@ -17,6 +19,18 @@ export default function AidDetailsModal({ isOpen, onClose, item }: AidDetailsMod
             dateStyle: 'medium',
             timeStyle: 'short'
         });
+    };
+
+    const handleMarkAsHelped = async () => {
+        if (item) {
+            const collectionName = item.offerType ? 'aid_offers' : 'aid_requests';
+            const docRef = doc(db, collectionName, item.id);
+            const newStatus = item.offerType ? 'help given' : 'helped';
+            await updateDoc(docRef, {
+                status: newStatus,
+            });
+            onClose();
+        }
     };
 
     return (
@@ -42,7 +56,14 @@ export default function AidDetailsModal({ isOpen, onClose, item }: AidDetailsMod
                     </div>
                 </div>
 
-                <div className="mt-6 flex justify-end">
+                <div className="mt-6 flex justify-between">
+                    <button
+                        type="button"
+                        onClick={handleMarkAsHelped}
+                        className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
+                    >
+                        {item.offerType ? 'Mark as Help Given' : 'Mark as Helped'}
+                    </button>
                     <button
                         type="button"
                         onClick={onClose}

@@ -35,9 +35,9 @@ const createFloodIcon = (color: string) => {
 };
 
 const floodIcons: Record<FloodLevel, L.Icon | L.DivIcon> = {
-    'Ankle-deep': createFloodIcon('#facc15'),
-    'Knee-deep': createFloodIcon('#fb923c'),
-    'Waist-deep': createFloodIcon('#f87171'),
+    'Ankle-deep': createFloodIcon('#facc15'), // yellow-400
+    'Knee-deep': createFloodIcon('#fb923c'), // orange-400
+    'Waist-deep': createFloodIcon('#f87171'), // red-400
 };
 
 function LocationPicker({ isPicking, onLocationConfirm }: { isPicking: boolean, onLocationConfirm: (latlng: L.LatLng) => void }) {
@@ -63,7 +63,7 @@ function LocationPicker({ isPicking, onLocationConfirm }: { isPicking: boolean, 
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] flex space-x-2">
                 <button
                     onClick={() => onLocationConfirm(position)}
-                    className="bg-green-600 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-green-700 transition-colors">
+                    className="bg-cyan-600 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-cyan-700 transition-colors">
                     Confirm Location
                 </button>
             </div>
@@ -159,16 +159,16 @@ export default function MapView() {
 
             {!isPickingLocation && (
                 <div className="absolute bottom-4 right-4 z-[1000]">
-                     <button onClick={() => setIsPickingLocation(true)} className="bg-blue-600 text-white font-bold py-3 px-4 rounded-full shadow-lg hover:bg-blue-700 transition-transform duration-200 hover:scale-105">
+                     <button onClick={() => setIsPickingLocation(true)} className="bg-cyan-600 text-white font-bold py-3 px-4 rounded-full shadow-lg hover:bg-cyan-700 transition-transform duration-200 hover:scale-105">
                         Report Flood
                     </button>
                 </div>
             )}
             
             {isPickingLocation && (
-                 <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] bg-black bg-opacity-70 text-white p-2 rounded-lg shadow-lg flex items-center space-x-2">
-                    <Target size={16} />
-                    <p>Move the map to position the pin.</p>
+                 <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] bg-white bg-opacity-90 text-gray-800 p-2 rounded-full shadow-lg flex items-center space-x-2 text-sm font-semibold">
+                    <Target size={16} className="text-cyan-600"/>
+                    <p>Move the map to set the pin location.</p>
                 </div>
             )}
 

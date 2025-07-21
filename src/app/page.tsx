@@ -2,12 +2,10 @@
 
 import { useState } from 'react';
 import { Home, Map, HeartHandshake } from 'lucide-react';
-
-// Dynamically import components to improve initial load time and handle client-side dependencies
 import dynamic from 'next/dynamic';
 
 const HomeView = dynamic(() => import('../components/HomeView'));
-const MapView = dynamic(() => import('../components/MapView'), { ssr: false }); // Leaflet map requires client-side rendering
+const MapView = dynamic(() => import('../components/MapView'), { ssr: false });
 const AidView = dynamic(() => import('../components/AidView'));
 
 type View = 'home' | 'map' | 'aid';
@@ -31,26 +29,26 @@ export default function Page() {
     <button
       onClick={() => setActiveView(view)}
       className={`flex flex-col items-center justify-center w-full pt-2 pb-1 transition-colors duration-200 ${
-        activeView === view ? 'text-blue-600' : 'text-gray-500 hover:text-blue-500'
+        activeView === view ? 'text-cyan-600' : 'text-gray-500 hover:text-cyan-500'
       }`}
     >
       <Icon size={24} />
-      <span className="text-xs mt-1">{label}</span>
+      <span className="text-xs mt-1 font-medium">{label}</span>
     </button>
   );
 
   return (
     <div className="flex flex-col h-screen">
-      <header className="bg-blue-600 text-white p-4 shadow-md z-10">
-        <h1 className="text-xl font-bold text-center">Community Flood Watch</h1>
-        <p className="text-center text-sm text-blue-200">Rodriguez, Rizal</p>
+      <header className="bg-white text-cyan-800 p-4 shadow-sm z-10 border-b border-gray-200">
+        <h1 className="text-2xl font-bold text-center">Ahon Montalban</h1>
+        <p className="text-center text-sm text-gray-500">Rodriguez, Rizal</p>
       </header>
 
-      <main className="flex-grow overflow-y-auto pb-20">
+      <main className="flex-grow overflow-y-auto bg-gray-50 pb-20">
         {renderView()}
       </main>
 
-      <footer className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white border-t border-gray-200 shadow-t-lg z-10">
+      <footer className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white border-t border-gray-200 z-10">
         <nav className="flex justify-around">
           <NavItem view="home" icon={Home} label="Home" />
           <NavItem view="map" icon={Map} label="Flood Map" />
