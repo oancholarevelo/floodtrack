@@ -1,15 +1,18 @@
+// src/components/MapView.tsx
+
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { db } from '../lib/firebase.js';
 import { collection, onSnapshot, addDoc, GeoPoint, Timestamp, serverTimestamp } from 'firebase/firestore';
 import ReportFloodModal from './ReportFloodModal';
-import { Target, X, Check, ShieldCheck, Siren } from 'lucide-react';
+import AddSafeAreaModal, { SafeAreaData } from './AddSafeAreaModal';
+import { Target, X, Check, ShieldCheck, Siren, ShieldPlus } from 'lucide-react';
 
-// Fix for default marker icon issue (this part is important and remains)
+// Fix for default marker icon issue
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
@@ -20,7 +23,9 @@ L.Icon.Default.mergeOptions({
     shadowUrl: markerShadow.src,
 });
 
+// --- TYPE DEFINITIONS ---
 export type FloodLevel = 'Ankle-deep' | 'Knee-deep' | 'Waist-deep';
+type PickingMode = 'flood' | 'safe_area' | null;
 
 interface FloodReportDoc {
     id: string;
@@ -29,36 +34,37 @@ interface FloodReportDoc {
     createdAt: Timestamp;
 }
 
-// --- Redesigned Icons ---
+interface EvacuationCenterDoc {
+    id: string;
+    name: string;
+    location: GeoPoint;
+    capacity?: number;
+    status?: string;
+    createdAt: Timestamp;
+}
 
+// --- ICONS ---
 const createFloodIcon = (level: FloodLevel) => {
     const colors: Record<FloodLevel, string> = {
-        'Ankle-deep': '#facc15', // yellow-400
-        'Knee-deep': '#fb923c', // orange-400
-        'Waist-deep': '#f87171', // red-400
+        'Ankle-deep': '#facc15', 'Knee-deep': '#fb923c', 'Waist-deep': '#f87171',
     };
-    const color = colors[level];
-    const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${color}" width="40px" height="40px" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5" fill="white" fill-opacity="0.7"/></svg>`;
+    const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${colors[level]}" width="40px" height="40px" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5" fill="white" fill-opacity="0.7"/></svg>`;
     return L.divIcon({ html: svgIcon, className: 'custom-flood-icon', iconSize: [40, 40], iconAnchor: [20, 40], popupAnchor: [0, -40] });
 };
 
 const evacuationCenterIcon = L.divIcon({
     html: `<div style="background-color: #16a34a; width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.3); border: 2px solid white;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></div>`,
-    className: 'custom-evacuation-icon',
-    iconSize: [32, 32],
-    iconAnchor: [16, 16],
+    className: 'custom-evacuation-icon', iconSize: [32, 32], iconAnchor: [16, 16],
 });
 
-// --- Redesigned Location Picker ---
-
+// --- LOCATION PICKER COMPONENT ---
 function LocationPicker({ isPicking, onLocationConfirm, onCancel }: { isPicking: boolean, onLocationConfirm: (latlng: L.LatLng) => void, onCancel: () => void }) {
     const [position, setPosition] = useState<L.LatLng | null>(null);
     const map = useMap();
 
     useEffect(() => {
         if (isPicking) {
-            map.dragging.enable();
-            map.scrollWheelZoom.enable();
+            map.dragging.enable(); map.scrollWheelZoom.enable();
             setPosition(map.getCenter());
             const onMove = () => setPosition(map.getCenter());
             map.on('move', onMove);
@@ -72,95 +78,96 @@ function LocationPicker({ isPicking, onLocationConfirm, onCancel }: { isPicking:
         <>
             <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] bg-white bg-opacity-90 text-slate-800 p-2 rounded-full shadow-lg flex items-center space-x-2 text-sm font-semibold">
                 <Target size={16} className="text-cyan-600"/>
-                <p>Move map to pin the flood location</p>
+                <p>Move map to pin the location</p>
             </div>
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1000] pointer-events-none">
                 <Target size={48} className="text-red-500 drop-shadow-lg" />
             </div>
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] flex space-x-4">
-                 <button
-                    onClick={onCancel}
-                    className="bg-white text-slate-700 font-bold p-4 rounded-full shadow-lg hover:bg-slate-100 transition-colors flex items-center">
-                    <X size={20} />
-                </button>
-                <button
-                    onClick={() => onLocationConfirm(position)}
-                    className="bg-cyan-600 text-white font-bold py-4 px-6 rounded-full shadow-lg hover:bg-cyan-700 transition-colors flex items-center space-x-2">
-                    <Check size={20} />
-                    <span>Confirm Location</span>
-                </button>
+                <button onClick={onCancel} className="bg-white text-slate-700 font-bold p-4 rounded-full shadow-lg hover:bg-slate-100 transition-colors"> <X size={20} /> </button>
+                <button onClick={() => onLocationConfirm(position)} className="bg-cyan-600 text-white font-bold py-4 px-6 rounded-full shadow-lg hover:bg-cyan-700 transition-colors flex items-center space-x-2"> <Check size={20} /> <span>Confirm Location</span> </button>
             </div>
         </>
     );
 }
 
-// --- Main Map View Component ---
-
+// --- MAIN MAP VIEW COMPONENT ---
 export default function MapView() {
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [isPickingLocation, setIsPickingLocation] = useState(false);
+    // State
+    const [pickingMode, setPickingMode] = useState<PickingMode>(null);
     const [pickedLocation, setPickedLocation] = useState<L.LatLng | null>(null);
+    const [isFloodModalOpen, setIsFloodModalOpen] = useState(false);
+    const [isSafeAreaModalOpen, setIsSafeAreaModalOpen] = useState(false);
     const [floodReports, setFloodReports] = useState<FloodReportDoc[]>([]);
+    const [evacuationCenters, setEvacuationCenters] = useState<EvacuationCenterDoc[]>([]);
     
     const initialPosition: L.LatLngExpression = [14.7739, 121.1390];
 
-    const evacuationCenters = useMemo(() => [
-        { id: 1, name: "Rodriguez Municipal Hall", pos: [14.7739, 121.1390] as L.LatLngExpression, capacity: 200, status: "Open" },
-        { id: 2, name: "Kasiglahan Village Elem. School", pos: [14.7583, 121.1486] as L.LatLngExpression, capacity: 400, status: "Open" },
-    ], []);
-
+    // Data Fetching from Firestore
     useEffect(() => {
         const reportsCollection = collection(db, 'flood_reports');
-        const unsubscribe = onSnapshot(reportsCollection, (snapshot) => {
+        const unsubReports = onSnapshot(reportsCollection, (snapshot) => {
             const reportsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FloodReportDoc));
             setFloodReports(reportsData);
         });
-        return () => unsubscribe();
+
+        const centersCollection = collection(db, 'evacuation_centers');
+        const unsubCenters = onSnapshot(centersCollection, (snapshot) => {
+            const centersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EvacuationCenterDoc));
+            setEvacuationCenters(centersData);
+        });
+
+        return () => {
+            unsubReports();
+            unsubCenters();
+        };
     }, []);
 
+    // Handlers
     const handleLocationConfirm = (latlng: L.LatLng) => {
         setPickedLocation(latlng);
-        setIsPickingLocation(false);
-        setIsModalOpen(true);
+        if (pickingMode === 'flood') setIsFloodModalOpen(true);
+        if (pickingMode === 'safe_area') setIsSafeAreaModalOpen(true);
+        setPickingMode(null);
     };
     
-    const handleReportSubmit = async (level: FloodLevel) => {
+    const handleFloodReportSubmit = async (level: FloodLevel) => {
         if (!pickedLocation) return;
-        const newReport = { level, location: new GeoPoint(pickedLocation.lat, pickedLocation.lng), createdAt: serverTimestamp() };
-        await addDoc(collection(db, 'flood_reports'), newReport);
-        setIsModalOpen(false);
+        await addDoc(collection(db, 'flood_reports'), { level, location: new GeoPoint(pickedLocation.lat, pickedLocation.lng), createdAt: serverTimestamp() });
+        setIsFloodModalOpen(false);
+        setPickedLocation(null);
+    };
+
+    const handleSafeAreaSubmit = async (data: SafeAreaData) => {
+        if (!pickedLocation) return;
+        await addDoc(collection(db, 'evacuation_centers'), { ...data, location: new GeoPoint(pickedLocation.lat, pickedLocation.lng), createdAt: serverTimestamp() });
+        setIsSafeAreaModalOpen(false);
         setPickedLocation(null);
     };
 
     const formatTimeAgo = (timestamp: Timestamp) => {
         if (!timestamp) return "Just now";
         const seconds = Math.floor((new Date().getTime() - timestamp.toDate().getTime()) / 1000);
-        let interval = seconds / 31536000;
-        if (interval > 1) return Math.floor(interval) + " years ago";
-        interval = seconds / 2592000;
-        if (interval > 1) return Math.floor(interval) + " months ago";
-        interval = seconds / 86400;
-        if (interval > 1) return Math.floor(interval) + " days ago";
-        interval = seconds / 3600;
-        if (interval > 1) return Math.floor(interval) + " hours ago";
-        interval = seconds / 60;
-        if (interval > 1) return Math.floor(interval) + " minutes ago";
-        return Math.floor(seconds) + " seconds ago";
+        let interval = Math.floor(seconds / 60);
+        if (interval < 60) return interval + " minutes ago";
+        interval = Math.floor(interval / 60);
+        if (interval < 24) return interval + " hours ago";
+        interval = Math.floor(interval / 24);
+        return interval + " days ago";
     };
 
     return (
         <div className="h-full w-full relative">
-            <MapContainer center={initialPosition} zoom={14} scrollWheelZoom={true} style={{ height: '100%', width: '100%' }} zoomControl={false}>
-                <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
+            <MapContainer center={initialPosition} zoom={14} style={{ height: '100%', width: '100%' }} zoomControl={false}>
+                <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
                 
-                {/* --- Markers --- */}
                 {evacuationCenters.map(center => (
-                    <Marker key={center.id} position={center.pos} icon={evacuationCenterIcon}>
+                    <Marker key={center.id} position={[center.location.latitude, center.location.longitude]} icon={evacuationCenterIcon}>
                         <Popup>
                             <div className="font-bold text-md text-slate-800 flex items-center"><ShieldCheck size={18} className="mr-2 text-green-600"/>{center.name}</div>
                             <div className="mt-2 space-y-1">
-                                <div>Status: <span className="font-semibold text-green-600">{center.status}</span></div>
-                                <div>Capacity: {center.capacity}</div>
+                                <div>Status: <span className="font-semibold text-green-600">{center.status || 'N/A'}</span></div>
+                                <div>Capacity: {center.capacity || 'N/A'}</div>
                             </div>
                         </Popup>
                     </Marker>
@@ -174,19 +181,24 @@ export default function MapView() {
                     </Marker>
                 ))}
                 
-                <LocationPicker isPicking={isPickingLocation} onLocationConfirm={handleLocationConfirm} onCancel={() => setIsPickingLocation(false)} />
+                <LocationPicker isPicking={pickingMode !== null} onLocationConfirm={handleLocationConfirm} onCancel={() => setPickingMode(null)} />
             </MapContainer>
 
-            {!isPickingLocation && (
-                <div className="absolute bottom-4 right-4 z-[1000]">
-                     <button onClick={() => setIsPickingLocation(true)} className="bg-red-600 text-white font-bold py-3 px-4 rounded-full shadow-lg hover:bg-red-700 transition-transform duration-200 hover:scale-105 flex items-center space-x-2">
+            {pickingMode === null && (
+                <div className="absolute bottom-4 right-4 z-[1000] flex flex-col space-y-3">
+                    <button onClick={() => setPickingMode('safe_area')} className="bg-green-600 text-white font-bold py-3 px-4 rounded-full shadow-lg hover:bg-green-700 transition-transform duration-200 hover:scale-105 flex items-center space-x-2">
+                        <ShieldPlus size={20}/>
+                        <span>Add Safe Area</span>
+                    </button>
+                    <button onClick={() => setPickingMode('flood')} className="bg-red-600 text-white font-bold py-3 px-4 rounded-full shadow-lg hover:bg-red-700 transition-transform duration-200 hover:scale-105 flex items-center space-x-2">
                         <Siren size={20}/>
                         <span>Report Flood</span>
                     </button>
                 </div>
             )}
 
-            <ReportFloodModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={handleReportSubmit} />
+            <ReportFloodModal isOpen={isFloodModalOpen} onClose={() => setIsFloodModalOpen(false)} onSubmit={handleFloodReportSubmit} />
+            <AddSafeAreaModal isOpen={isSafeAreaModalOpen} onClose={() => setIsSafeAreaModalOpen(false)} onSubmit={handleSafeAreaSubmit} />
         </div>
     );
 }
