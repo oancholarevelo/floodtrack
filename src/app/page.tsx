@@ -29,9 +29,8 @@ export default function Page() {
   const NavItem = ({ view, icon: Icon, label }: { view: View, icon: React.ElementType, label: string }) => (
     <button
       onClick={() => setActiveView(view)}
-      className={`flex flex-col items-center justify-center w-full h-16 transition-colors duration-300 ${
-        activeView === view ? 'text-cyan-600' : 'text-slate-500 hover:text-cyan-500'
-      }`}
+      className={`flex flex-col items-center justify-center w-full h-16 transition-colors duration-300 ${activeView === view ? 'text-cyan-600' : 'text-slate-500 hover:text-cyan-500'
+        }`}
     >
       <Icon size={24} className={activeView === view ? 'scale-110' : ''} />
       <span className="text-xs mt-1 font-semibold">{label}</span>
@@ -47,7 +46,7 @@ export default function Page() {
         </div>
       </header>
 
-      <main className="flex-grow overflow-y-auto bg-slate-50 pb-24">
+      <main className="flex-grow overflow-y-auto bg-slate-50 mb-24">
         {renderView()}
       </main>
 
