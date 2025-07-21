@@ -39,14 +39,14 @@ export default function Page() {
 
   return (
     <div className="flex flex-col h-screen">
-      <header className="bg-white p-4 z-10 sticky top-0 flex items-center justify-center border-b border-slate-100">
+      <header className="bg-white p-4 z-[60] sticky top-0 flex items-center justify-center border-b border-slate-100">
         <div className="text-center">
           <h1 className="text-xl font-bold text-slate-800">Ahon Montalban</h1>
           <p className="text-sm text-slate-500">Rodriguez, Rizal Flood Response</p>
         </div>
       </header>
 
-      <main className="flex-grow overflow-y-auto bg-slate-50 mb-24">
+      <main className="flex-grow overflow-y-auto bg-slate-50 pb-24">
         {renderView()}
       </main>
 
