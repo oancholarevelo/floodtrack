@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AidPostData, AidTab, OfferType } from './AidView';
+import { X } from 'lucide-react';
 
 interface PostAidModalProps {
     isOpen: boolean;
@@ -16,12 +17,23 @@ export default function PostAidModal({ isOpen, onClose, onSubmit }: PostAidModal
     const [details, setDetails] = useState('');
     const [offerType, setOfferType] = useState<OfferType>('Other');
 
+    useEffect(() => {
+        // Reset form when modal opens
+        if (isOpen) {
+            setTitle('');
+            setLocation('');
+            setDetails('');
+            setOfferType('Other');
+            setPostType('requests');
+        }
+    }, [isOpen]);
+
     if (!isOpen) return null;
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!title || !location || !details) {
-            alert("Please fill out all fields.");
+        if (!title.trim() || !location.trim() || !details.trim()) {
+            alert("Please fill out all required fields.");
             return;
         }
         const postData: AidPostData = { type: postType, title, location, details };
@@ -31,88 +43,70 @@ export default function PostAidModal({ isOpen, onClose, onSubmit }: PostAidModal
         onSubmit(postData);
     };
 
+    const FormLabel: React.FC<{htmlFor: string, children: React.ReactNode}> = ({htmlFor, children}) => (
+        <label htmlFor={htmlFor} className="block text-sm font-medium text-slate-700 mb-1">{children}</label>
+    );
+
+    const InputField: React.FC<React.InputHTMLAttributes<HTMLInputElement>> = (props) => (
+        <input {...props} className="mt-1 w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition" />
+    );
+
+    const SelectField: React.FC<React.SelectHTMLAttributes<HTMLSelectElement>> = (props) => (
+         <select {...props} className="mt-1 w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition" />
+    );
+
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-[2000]">
-            <div className="bg-white p-6 rounded-lg shadow-xl w-11/12 max-w-sm">
-                <h2 className="text-xl font-bold mb-4">Create a Post</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex justify-center items-center z-[2000] p-4">
+            <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md relative">
+                <button onClick={onClose} className="absolute top-3 right-3 text-slate-400 hover:text-slate-600">
+                    <X size={24} />
+                </button>
+                <h2 className="text-2xl font-bold mb-4 text-slate-800">Create a Community Post</h2>
+                
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Post Type</label>
-                        <select
-                            value={postType}
-                            onChange={(e) => setPostType(e.target.value as AidTab)}
-                            className="w-full p-2 border border-gray-300 rounded-md"
-                        >
-                            <option value="requests">I Need Help</option>
-                            <option value="offers">I Can Offer Help</option>
-                        </select>
+                        <FormLabel htmlFor="post-type">I want to...</FormLabel>
+                        <SelectField id="post-type" value={postType} onChange={(e) => setPostType(e.target.value as AidTab)}>
+                            <option value="requests">Request Help</option>
+                            <option value="offers">Offer Help</option>
+                        </SelectField>
                     </div>
 
                     {postType === 'offers' && (
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Type of Aid</label>
-                            <select
-                                value={offerType}
-                                onChange={(e) => setOfferType(e.target.value as OfferType)}
-                                className="w-full p-2 border border-gray-300 rounded-md"
-                            >
+                            <FormLabel htmlFor="offer-type">Type of Aid</FormLabel>
+                            <SelectField id="offer-type" value={offerType} onChange={(e) => setOfferType(e.target.value as OfferType)}>
                                 <option>Food/Water</option>
                                 <option>Transport</option>
                                 <option>Shelter</option>
                                 <option>Volunteer</option>
                                 <option>Other</option>
-                            </select>
+                            </SelectField>
                         </div>
                     )}
 
                     <div>
-                        <label htmlFor="title" className="block text-sm font-medium text-gray-700">Title</label>
-                        <input
-                            type="text"
-                            id="title"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            placeholder="e.g., Need Drinking Water"
-                            className="mt-1 w-full p-2 border border-gray-300 rounded-md"
-                            required
-                        />
+                        <FormLabel htmlFor="title">Title / Headline</FormLabel>
+                        <InputField type="text" id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Need Drinking Water for 2" required />
                     </div>
                     <div>
-                        <label htmlFor="location" className="block text-sm font-medium text-gray-700">Location / Barangay</label>
-                        <input
-                            type="text"
-                            id="location"
-                            value={location}
-                            onChange={(e) => setLocation(e.target.value)}
-                            placeholder="e.g., Brgy. San Jose"
-                            className="mt-1 w-full p-2 border border-gray-300 rounded-md"
-                            required
-                        />
+                        <FormLabel htmlFor="location">Location / Barangay</FormLabel>
+                        <InputField type="text" id="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g., Brgy. San Jose, Sitio Wawa" required />
                     </div>
                     <div>
-                        <label htmlFor="details" className="block text-sm font-medium text-gray-700">Details & Contact Info</label>
+                        <FormLabel htmlFor="details">Details & Contact Info</FormLabel>
                         <textarea
-                            id="details"
-                            value={details}
-                            onChange={(e) => setDetails(e.target.value)}
-                            placeholder="Describe your situation and how to contact you."
-                            className="mt-1 w-full p-2 border border-gray-300 rounded-md"
-                            rows={3}
-                            required
+                            id="details" value={details} onChange={(e) => setDetails(e.target.value)}
+                            placeholder="Please describe your situation and provide a contact number or instructions."
+                            className="mt-1 w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition"
+                            rows={4} required
                         />
                     </div>
-                    <div className="flex justify-end space-x-2">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
-                        >
+                    <div className="flex justify-end space-x-3 pt-4">
+                        <button type="button" onClick={onClose} className="px-5 py-2.5 bg-slate-100 text-slate-800 rounded-lg hover:bg-slate-200 font-semibold transition">
                             Cancel
                         </button>
-                        <button
-                            type="submit"
-                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                        >
+                        <button type="submit" className="px-5 py-2.5 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 font-semibold transition shadow-sm hover:shadow-md">
                             Submit Post
                         </button>
                     </div>

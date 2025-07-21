@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { Search, PlusCircle } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Search, PlusCircle, Clock, MapPin, CheckCircle, Heart, HandHelping } from 'lucide-react';
 import { db } from '../lib/firebase';
-import { collection, onSnapshot, Timestamp, addDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, Timestamp, addDoc, serverTimestamp, query, orderBy, where } from 'firebase/firestore';
 import PostAidModal from './PostAidModal';
 import AidDetailsModal from './AidDetailsModal';
 
 export type AidTab = 'requests' | 'offers';
 export type OfferType = 'Food/Water' | 'Transport' | 'Shelter' | 'Volunteer' | 'Other';
+export type AidStatus = 'active' | 'helped' | 'help given';
 
 export interface AidPostData {
     type: AidTab;
@@ -16,7 +17,6 @@ export interface AidPostData {
     location: string;
     details: string;
     offerType?: OfferType;
-    status?: 'helped' | 'help given';
 }
 
 export interface AidItemDoc {
@@ -25,7 +25,7 @@ export interface AidItemDoc {
     location: string;
     details: string;
     offerType?: OfferType;
-    status?: 'helped' | 'help given';
+    status: AidStatus;
     createdAt: Timestamp;
 }
 
@@ -36,12 +36,13 @@ export default function AidView() {
     const [selectedAidItem, setSelectedAidItem] = useState<AidItemDoc | null>(null);
     const [aidRequests, setAidRequests] = useState<AidItemDoc[]>([]);
     const [aidOffers, setAidOffers] = useState<AidItemDoc[]>([]);
+    const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
         const createListener = (collectionName: string, setter: React.Dispatch<React.SetStateAction<AidItemDoc[]>>) => {
             const q = query(collection(db, collectionName), orderBy('createdAt', 'desc'));
             return onSnapshot(q, (snapshot) => {
-                const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AidItemDoc));
+                const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), status: doc.data().status || 'active' } as AidItemDoc));
                 setter(data);
             });
         };
@@ -58,15 +59,10 @@ export default function AidView() {
     const handleAidSubmit = async (postData: AidPostData) => {
         const collectionName = postData.type === 'requests' ? 'aid_requests' : 'aid_offers';
         const { type, ...data } = postData;
-        const newPost = { ...data, createdAt: serverTimestamp() };
+        const newPost = { ...data, createdAt: serverTimestamp(), status: 'active' };
 
-        try {
-            await addDoc(collection(db, collectionName), newPost);
-            setIsPostModalOpen(false);
-        } catch (error) {
-            console.error("Error adding aid post: ", error);
-            alert("Failed to create post. Please try again.");
-        }
+        await addDoc(collection(db, collectionName), newPost);
+        setIsPostModalOpen(false);
     };
     
     const handleViewDetails = (item: AidItemDoc) => {
@@ -74,72 +70,118 @@ export default function AidView() {
         setIsDetailsModalOpen(true);
     };
 
+    const formatTimeAgo = (timestamp: Timestamp) => {
+        if (!timestamp) return "a moment ago";
+        const seconds = Math.floor((new Date().getTime() - timestamp.toDate().getTime()) / 1000);
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return `${minutes}m ago`;
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return `${hours}h ago`;
+        const days = Math.floor(hours / 24);
+        return `${days}d ago`;
+    };
+
+    const filteredRequests = useMemo(() => 
+        aidRequests.filter(item => 
+            item.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+            item.location.toLowerCase().includes(searchTerm.toLowerCase())
+        ), [aidRequests, searchTerm]);
+
+    const filteredOffers = useMemo(() =>
+        aidOffers.filter(item => 
+            item.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+            item.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            item.offerType?.toLowerCase().includes(searchTerm.toLowerCase())
+        ), [aidOffers, searchTerm]);
+
     const AidCard = (item: AidItemDoc) => (
         <div
-            className={`bg-white p-4 rounded-lg border border-gray-200 transition-shadow ${
-                item.status === 'helped' || item.status === 'help given' ? 'bg-gray-50 opacity-60' : 'hover:shadow-md'
+            className={`bg-white p-4 rounded-xl border transition-all duration-200 ${
+                item.status !== 'active' 
+                    ? 'border-slate-100 bg-slate-50 opacity-70' 
+                    : 'border-slate-200 hover:border-cyan-400 hover:shadow-lg hover:scale-[1.02]'
             }`}
         >
             <div className="flex justify-between items-start">
-                <div>
-                    <h4 className="font-bold text-gray-800">{item.title}</h4>
-                    <p className="text-sm text-gray-500 mb-2">{item.location}</p>
-                </div>
+                <h4 className="font-bold text-slate-800 text-lg pr-2">{item.title}</h4>
                 {item.offerType && (
-                    <span className="text-xs font-semibold bg-cyan-100 text-cyan-800 px-2 py-1 rounded-full">{item.offerType}</span>
+                    <span className="text-xs font-semibold bg-cyan-100 text-cyan-800 px-2.5 py-1 rounded-full whitespace-nowrap">{item.offerType}</span>
                 )}
             </div>
             
-            <p className="text-gray-700 text-sm mt-1 truncate">{item.details}</p>
-            
-            <button 
-                onClick={() => handleViewDetails(item)}
-                className="mt-4 w-full bg-cyan-600 text-white font-semibold py-2 rounded-lg hover:bg-cyan-700 transition-colors">
-                View Details
-            </button>
-
-            {(item.status === 'helped' || item.status === 'help given') && (
-                <div className="mt-2 text-center text-sm font-semibold text-green-600">
-                    {item.status === 'helped' ? 'Marked as Helped' : 'Marked as Help Given'}
+             <div className="flex items-center text-sm text-slate-500 mt-1 space-x-4">
+                <div className="flex items-center space-x-1.5">
+                    <MapPin size={14} />
+                    <span>{item.location}</span>
                 </div>
+                 <div className="flex items-center space-x-1.5">
+                    <Clock size={14} />
+                    <span>{formatTimeAgo(item.createdAt)}</span>
+                </div>
+            </div>
+            
+            <p className="text-slate-600 text-sm mt-3 h-10 overflow-hidden line-clamp-2">{item.details}</p>
+            
+            {item.status !== 'active' ? (
+                 <div className="mt-4 text-center text-sm font-semibold text-green-600 bg-green-100 py-2 rounded-lg flex items-center justify-center space-x-2">
+                    <CheckCircle size={16} />
+                    <span>{item.status === 'helped' ? 'Request Fulfilled' : 'Help Provided'}</span>
+                </div>
+            ) : (
+                <button 
+                    onClick={() => handleViewDetails(item)}
+                    className="mt-4 w-full bg-cyan-600 text-white font-semibold py-2.5 rounded-lg hover:bg-cyan-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500">
+                    View Details
+                </button>
             )}
         </div>
     );
+    
+    const TabButton = ({ tab, label, icon }: { tab: AidTab, label: string, icon: React.ReactNode }) => (
+        <button 
+            onClick={() => setActiveTab(tab)}
+            className={`w-1/2 py-3 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center space-x-2 ${activeTab === tab ? 'bg-cyan-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-200'}`}
+        >
+            {icon}
+            <span>{label}</span>
+        </button>
+    );
+
+    const currentList = activeTab === 'requests' ? filteredRequests : filteredOffers;
 
     return (
         <div className="h-full w-full relative flex flex-col">
-            {/* Non-scrolling top part */}
-            <div className="p-4 pb-0">
-                <div className="flex bg-gray-200 rounded-full p-1 mb-4">
-                    <button 
-                        onClick={() => setActiveTab('requests')}
-                        className={`w-1/2 py-2 rounded-full text-sm font-semibold transition-colors ${activeTab === 'requests' ? 'bg-white text-cyan-700 shadow' : 'text-gray-600'}`}
-                    >
-                        Need Help
-                    </button>
-                    <button 
-                        onClick={() => setActiveTab('offers')}
-                        className={`w-1/2 py-2 rounded-full text-sm font-semibold transition-colors ${activeTab === 'offers' ? 'bg-white text-cyan-700 shadow' : 'text-gray-600'}`}
-                    >
-                        Offer Help
-                    </button>
+            <div className="p-4 bg-white border-b border-slate-100 sticky top-0 z-10">
+                <div className="flex bg-slate-100 rounded-full p-1 mb-4">
+                    <TabButton tab="requests" label="Need Help" icon={<HandHelping size={16} />} />
+                    <TabButton tab="offers" label="Offer Help" icon={<Heart size={16} />} />
                 </div>
                 
-                <div className="relative mb-4">
-                    <input type="text" placeholder="Search..." className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-full focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"/>
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                <div className="relative">
+                    <input 
+                        type="text" 
+                        placeholder={`Search in ${activeTab}...`}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-full focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-shadow"
+                    />
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
                 </div>
             </div>
 
-            {/* Scrollable list area */}
-            <div className="flex-grow overflow-y-auto px-4">
-                <div className="space-y-3">
-                    {activeTab === 'requests' && aidRequests.map(item => <AidCard key={item.id} {...item} />)}
-                    {activeTab === 'offers' && aidOffers.map(item => <AidCard key={item.id} {...item} />)}
-                </div>
+            <div className="flex-grow overflow-y-auto p-4">
+                {currentList.length > 0 ? (
+                    <div className="space-y-4">
+                        {currentList.map(item => <AidCard key={item.id} {...item} />)}
+                    </div>
+                ) : (
+                    <div className="text-center py-16 text-slate-500">
+                        <h3 className="font-semibold text-lg">No {activeTab} found</h3>
+                        <p className="text-sm">There are currently no posts in this category.</p>
+                    </div>
+                )}
             </div>
             
-            {/* Button positioned relative to the full-height container */}
             <div className="absolute bottom-4 right-4 z-10">
                  <button 
                     onClick={() => setIsPostModalOpen(true)}

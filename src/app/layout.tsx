@@ -6,7 +6,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Ahon Montalban",
-  description: "A community-driven platform for flood monitoring and assistance in the Philippines.",
+  description: "A community-driven platform for flood monitoring and assistance in Rodriguez, Rizal.",
 };
 
 export default function RootLayout({
@@ -16,8 +16,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.className} bg-gray-100`}>
-        <div className="max-w-lg mx-auto bg-white min-h-screen">
+      <body className={`${inter.className} bg-slate-50`}>
+        <div className="max-w-lg mx-auto bg-white min-h-screen shadow-2xl shadow-slate-200">
           {children}
         </div>
       </body>
