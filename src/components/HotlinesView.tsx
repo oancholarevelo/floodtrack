@@ -16,18 +16,12 @@ interface HotlineCardProps {
 
 // Data has been updated to use a consistent `numbers` array for easier mapping.
 const hotlineData = {
-  rodriguez: {
-    title: "Rodriguez, Rizal",
-    icon: Shield,
-    contacts: [
-      { name: "Emergency Hotline", numbers: ["531-61-06"] },
-    ]
-  },
   rizal: {
     title: "Rizal Province",
     icon: Users,
     contacts: [
       { name: "Tanay", numbers: ["655-17-73 local 253"] },
+      { name: "Montalban", numbers: ["531-61-06"] },
       { name: "Cardona", numbers: ["954-97-28", "0915-612-6631"] },
       { name: "Teresa", numbers: ["0920-972-3731"] },
       { name: "San Mateo", numbers: ["781-68-20"] },
@@ -118,7 +112,6 @@ export default function HotlinesView() {
   return (
     // FIX: Reverted to original state. The parent <main> will handle scrolling and padding.
     <div className="p-4 space-y-4">
-      <HotlineCard {...hotlineData.rodriguez} />
       <HotlineCard {...hotlineData.rizal} />
       <HotlineCard {...hotlineData.redCross} />
       <HotlineCard {...hotlineData.metroManila} />

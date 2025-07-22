@@ -32,7 +32,7 @@ interface FloodReportDoc {
 }
 
 interface EvacuationCenterDoc {
-    id: string;
+    id:string;
     name: string;
     location: GeoPoint;
     capacity?: number;
@@ -53,16 +53,39 @@ const evacuationCenterIcon = L.divIcon({
     className: 'custom-evacuation-icon', iconSize: [32, 32], iconAnchor: [16, 16],
 });
 
+
+// --- UPDATED LocateControl COMPONENT ---
 function LocateControl() {
     const map = useMap();
 
+    useEffect(() => {
+        // This function runs when the location is successfully found
+        const onLocationFound = (e: L.LocationEvent) => {
+            // You can optionally add a marker here if you want
+            // L.marker(e.latlng).addTo(map).bindPopup("You are here!").openPopup();
+        };
+
+        // This function runs if location access fails or is denied
+        const onLocationError = (e: L.ErrorEvent) => {
+            console.error("Location error:", e.message);
+            alert("Location access denied or unavailable. Please check your browser settings and ensure location services are enabled.");
+        };
+
+        // Set up the event listeners on the map instance
+        map.on('locationfound', onLocationFound);
+        map.on('locationerror', onLocationError);
+
+        // Clean up the listeners when the component is removed
+        return () => {
+            map.off('locationfound', onLocationFound);
+            map.off('locationerror', onLocationError);
+        };
+    }, [map]);
+
     const handleLocate = () => {
-        map.locate().on('locationfound', function (e) {
-            map.flyTo(e.latlng, 16);
-        }).on('locationerror', function(e){
-            console.error(e);
-            alert("Could not access your location. Please ensure location services are enabled.");
-        });
+        // Now, the button simply tells the map to find the location.
+        // setView: true automatically pans the map to the user's location.
+        map.locate({ setView: true, maxZoom: 16 });
     };
 
     return (
@@ -75,6 +98,8 @@ function LocateControl() {
         </div>
     );
 }
+// --- END OF UPDATED LocateControl COMPONENT ---
+
 
 function LocationPicker({ isPicking, onLocationConfirm, onCancel }: { isPicking: boolean, onLocationConfirm: (latlng: L.LatLng) => void, onCancel: () => void }) {
     const [position, setPosition] = useState<L.LatLng | null>(null);
