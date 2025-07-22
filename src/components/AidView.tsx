@@ -29,7 +29,7 @@ export interface AidItemDoc {
     createdAt: Timestamp;
 }
 
-export default function AidView() {
+export default function AidView({ location }: { location: string }) {
     const [activeTab, setActiveTab] = useState<AidTab>('requests');
     const [isPostModalOpen, setIsPostModalOpen] = useState(false);
     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -194,6 +194,7 @@ export default function AidView() {
                 isOpen={isPostModalOpen}
                 onClose={() => setIsPostModalOpen(false)}
                 onSubmit={handleAidSubmit}
+                location={location}
             />
 
             <AidDetailsModal

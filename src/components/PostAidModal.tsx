@@ -8,45 +8,40 @@ interface PostAidModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSubmit: (data: AidPostData) => void;
+    location: string;
 }
 
-// A list of locations. You can expand this list as needed.
-const locations = [
-    "Ampid", "Balite", "Burgos", "Geronimo", "Macabud", "Manggahan", "Mascap",
-    "Puray", "Rosario", "San Isidro", "San Jose", "San Rafael", "Other"
-];
-
-export default function PostAidModal({ isOpen, onClose, onSubmit }: PostAidModalProps) {
+export default function PostAidModal({ isOpen, onClose, onSubmit, location }: PostAidModalProps) {
     const [postType, setPostType] = useState<AidTab>('requests');
     const [title, setTitle] = useState('');
-    const [selectedLocation, setSelectedLocation] = useState('San Jose');
+    const [city, setCity] = useState('');
+    const [barangay, setBarangay] = useState('');
     const [addressDetails, setAddressDetails] = useState('');
     const [details, setDetails] = useState('');
     const [offerType, setOfferType] = useState<OfferType>('Other');
 
     useEffect(() => {
         if (isOpen) {
-            // Reset form fields when modal opens
             setTitle('');
-            setSelectedLocation('San Jose');
+            setCity(location.charAt(0).toUpperCase() + location.slice(1));
+            setBarangay('');
             setAddressDetails('');
             setDetails('');
             setOfferType('Other');
             setPostType('requests');
         }
-    }, [isOpen]);
+    }, [isOpen, location]);
 
     if (!isOpen) return null;
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!title.trim() || !addressDetails.trim() || !details.trim()) {
+        if (!title.trim() || !city.trim() || !barangay.trim() || !addressDetails.trim() || !details.trim()) {
             alert("Please fill out all required fields.");
             return;
         }
         
-        // Combine the selected location and address details into a single location string
-        const fullLocation = `${addressDetails} (Brgy. ${selectedLocation})`;
+        const fullLocation = `${addressDetails}, Brgy. ${barangay}, ${city}`;
 
         const postData: AidPostData = {
             type: postType,
@@ -109,15 +104,18 @@ export default function PostAidModal({ isOpen, onClose, onSubmit }: PostAidModal
                     </div>
                     
                     <div>
-                        <FormLabel htmlFor="location-select">Barangay / City</FormLabel>
-                        <SelectField id="location-select" value={selectedLocation} onChange={(e) => setSelectedLocation(e.target.value)}>
-                            {locations.map(loc => <option key={loc} value={loc}>{loc}</option>)}
-                        </SelectField>
+                        <FormLabel htmlFor="city">City / Municipality</FormLabel>
+                        <InputField type="text" id="city" value={city} onChange={(e) => setCity(e.target.value)} placeholder="e.g., Quezon City" required />
+                    </div>
+                    
+                    <div>
+                        <FormLabel htmlFor="barangay">Barangay</FormLabel>
+                        <InputField type="text" id="barangay" value={barangay} onChange={(e) => setBarangay(e.target.value)} placeholder="e.g., Batasan Hills" required />
                     </div>
 
                     <div>
-                        <FormLabel htmlFor="address-details">Full Address / Landmark</FormLabel>
-                        <InputField type="text" id="address-details" value={addressDetails} onChange={(e) => setAddressDetails(e.target.value)} placeholder="e.g., 123 Rizal Ave, near the green gate" required />
+                        <FormLabel htmlFor="address-details">Street Address / Landmark</FormLabel>
+                        <InputField type="text" id="address-details" value={addressDetails} onChange={(e) => setAddressDetails(e.target.value)} placeholder="e.g., 123 Constitution St., near the school" required />
                     </div>
 
                     <div>

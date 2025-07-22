@@ -7,12 +7,9 @@ export default function LandingPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // This code runs when the component mounts on the client side
     if (typeof window !== 'undefined') {
-      // Check if geolocation is supported
       if (!navigator.geolocation) {
         console.error("Geolocation is not supported by your browser.");
-        // Fallback: redirect to a default location
         router.push('/montalban');
         return;
       }
@@ -28,42 +25,34 @@ export default function LandingPage() {
         }
 
         try {
-          // Use the Geoapify API to get the city/municipality name
           const response = await fetch(`https://api.geoapify.com/v1/geocode/reverse?lat=${latitude}&lon=${longitude}&apiKey=${apiKey}`);
           const data = await response.json();
           
           if (data.features.length > 0) {
-            // Extract the location name (municipality is often more specific for this area)
             const properties = data.features[0].properties;
             const locationName = (properties.municipality || properties.city || '').toLowerCase().replace(/\s+/g, '');
 
             if (locationName) {
-              console.log(`Detected location: ${locationName}`);
-              // In a real app, you might want to check if this is a supported location
-              // before redirecting. For now, we'll just redirect.
               router.push(`/${locationName}`);
             } else {
-              console.error("Could not determine location name from coordinates.");
-              router.push('/montalban'); // Fallback
+              router.push('/montalban');
             }
           } else {
-             router.push('/montalban'); // Fallback if no features found
+             router.push('/montalban');
           }
 
         } catch (error) {
           console.error("Error during reverse geocoding:", error);
-          router.push('/montalban'); // Fallback on API error
+          router.push('/montalban');
         }
       };
 
       const handleError = (error: GeolocationPositionError) => {
         console.error(`Geolocation error: ${error.message}`);
-        // If user denies permission, redirect to a default location
         alert("Location access was denied. Redirecting to a default location.");
         router.push('/montalban');
       };
 
-      // Request user's location
       navigator.geolocation.getCurrentPosition(handleSuccess, handleError);
     }
   }, [router]);

@@ -1,31 +1,27 @@
 "use client";
 
-import { useState, ComponentType } from 'react';
-import { useParams } from 'next/navigation'; // Import the useParams hook
+import { useState } from 'react';
+import { useParams } from 'next/navigation';
 import { Home, Map, HeartHandshake, Phone } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 
-// Define a props interface for components that need the location
 interface LocationProps {
   location: string;
 }
 
-// Dynamically import views and type them correctly
 const HomeView = dynamic<LocationProps>(() => import('../../components/HomeView'));
 const MapView = dynamic<LocationProps>(() => import('../../components/MapView'), { ssr: false });
-const AidView = dynamic(() => import('../../components/AidView'));
+const AidView = dynamic<LocationProps>(() => import('../../components/AidView'));
 const HotlinesView = dynamic(() => import('../../components/HotlinesView'));
 
 type View = 'home' | 'map' | 'aid' | 'hotlines';
 
-// FIX: Remove params from the function signature
 export default function Page() {
   const [activeView, setActiveView] = useState<View>('home');
   
-  // FIX: Get the params using the useParams hook
   const params = useParams();
-  const location = (params.location as string) || 'montalban'; // Get location, with a fallback
+  const location = (params.location as string) || 'montalban';
   
   const formattedLocation = location.charAt(0).toUpperCase() + location.slice(1);
 
@@ -34,7 +30,7 @@ export default function Page() {
       case 'map':
         return <MapView location={location} />;
       case 'aid':
-        return <AidView />;
+        return <AidView location={location} />;
       case 'hotlines':
         return <HotlinesView />;
       case 'home':

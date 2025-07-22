@@ -1,9 +1,7 @@
-// src/components/AddSafeAreaModal.tsx
-
 "use client";
 
 import { useState } from 'react';
-import { X, Shield, Users, Activity } from 'lucide-react';
+import { X } from 'lucide-react'; // Removed Shield, Users, Activity
 
 export interface SafeAreaData {
     name: string;
