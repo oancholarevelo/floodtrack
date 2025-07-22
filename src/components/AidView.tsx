@@ -149,7 +149,8 @@ export default function AidView() {
     const currentList = activeTab === 'requests' ? filteredRequests : filteredOffers;
 
     return (
-        <div className="h-full w-full flex flex-col pb-24">
+        // FIX: Reverted to original state. The parent <main> now controls scrolling.
+        <div className="h-full w-full flex flex-col">
             <div className="p-4 bg-white border-b border-slate-100">
                 <div className="flex bg-slate-100 rounded-full p-1 mb-4">
                     <TabButton tab="requests" label="Need Help" icon={<HandHelping size={16} />} />

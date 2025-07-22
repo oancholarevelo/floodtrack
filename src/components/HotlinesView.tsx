@@ -116,7 +116,8 @@ const HotlineCard: React.FC<HotlineCardProps> = ({ title, icon: Icon, contacts }
 
 export default function HotlinesView() {
   return (
-    <div className="p-4 space-y-4 pb-24">
+    // FIX: Reverted to original state. The parent <main> will handle scrolling and padding.
+    <div className="p-4 space-y-4">
       <HotlineCard {...hotlineData.rodriguez} />
       <HotlineCard {...hotlineData.rizal} />
       <HotlineCard {...hotlineData.redCross} />

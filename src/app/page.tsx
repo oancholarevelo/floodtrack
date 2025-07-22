@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Home, Map, HeartHandshake, Phone } from 'lucide-react';
 import dynamic from 'next/dynamic';
+import Image from 'next/image';
 
 // Dynamically import views
 const HomeView = dynamic(() => import('../components/HomeView'));
@@ -29,6 +30,10 @@ export default function Page() {
     }
   };
 
+  const mainContainerClass = activeView === 'map'
+    ? 'flex-grow' // No scroll or padding for the map view
+    : 'flex-grow overflow-y-auto pb-24'; // Scroll and padding for other views
+
   const NavItem = ({ view, icon: Icon, label }: { view: View, icon: React.ElementType, label: string }) => (
     <button
       onClick={() => setActiveView(view)}
@@ -41,16 +46,19 @@ export default function Page() {
   );
 
   return (
-    <div className="flex flex-col h-screen">
-      <header className="bg-white p-4 z-[60] sticky top-0 flex items-center justify-center border-b border-slate-100">
-        <div className="text-center">
+    // FIX: Added 'relative' to ensure absolutely positioned children are contained correctly
+    <div className="flex flex-col h-screen relative">
+      <header className="bg-white px-4 py-2 pt-[calc(0.5rem+env(safe-area-inset-top))] z-[60] sticky top-0 flex items-center justify-center border-b border-slate-100">
+        {/* FIX: Added logo and updated layout for it */}
+        <div className="text-center flex flex-col items-center">
+          <Image src="/logo.png" alt="Ahon Montalban Logo" width={40} height={40} className="mb-1" priority />
           <h1 className="text-xl font-bold text-slate-800">Ahon Montalban</h1>
           <p className="text-sm text-slate-500">Rodriguez, Rizal Flood Response</p>
         </div>
       </header>
 
-      {/* FIX: Added 'relative' class to make this the positioning container for absolute children */}
-      <main className="flex-grow overflow-y-auto bg-slate-50 pb-24 relative">
+      {/* FIX: Main container class is now conditional based on the active view */}
+      <main className={`${mainContainerClass} bg-slate-50`}>
         {renderView()}
       </main>
 

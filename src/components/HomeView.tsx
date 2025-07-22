@@ -41,7 +41,7 @@ export default function HomeView() {
   useEffect(() => {
     const fetchWeather = async () => {
       const apiKey = process.env.NEXT_PUBLIC_WEATHER_API_KEY;
-      if (!apiKey || apiKey === "YOUR_WEATHER_API_KEY_HERE") {
+      if (!apiKey || apiKey === "YOUR_API_KEY") {
         setWeatherError("Weather API key not configured.");
         setLoadingWeather(false);
         return;
@@ -109,6 +109,7 @@ export default function HomeView() {
   }
 
   return (
+    // FIX: Reverted to original state so the parent <main> can handle scrolling.
     <div className="p-4 space-y-4">
       {/* Weather Card */}
       <Card title={`Weather Update (${currentTime})`}>
