@@ -1,5 +1,3 @@
-// src/components/MapView.tsx
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -23,7 +21,6 @@ L.Icon.Default.mergeOptions({
     shadowUrl: markerShadow.src,
 });
 
-// --- TYPE DEFINITIONS ---
 export type FloodLevel = 'Ankle-deep' | 'Knee-deep' | 'Waist-deep';
 type PickingMode = 'flood' | 'safe_area' | null;
 
@@ -43,7 +40,6 @@ interface EvacuationCenterDoc {
     createdAt: Timestamp;
 }
 
-// --- ICONS ---
 const createFloodIcon = (level: FloodLevel) => {
     const colors: Record<FloodLevel, string> = {
         'Ankle-deep': '#facc15', 'Knee-deep': '#fb923c', 'Waist-deep': '#f87171',
@@ -57,7 +53,6 @@ const evacuationCenterIcon = L.divIcon({
     className: 'custom-evacuation-icon', iconSize: [32, 32], iconAnchor: [16, 16],
 });
 
-// --- NEW COMPONENT: LocateControl ---
 function LocateControl() {
     const map = useMap();
 
@@ -81,7 +76,6 @@ function LocateControl() {
     );
 }
 
-// --- LOCATION PICKER COMPONENT ---
 function LocationPicker({ isPicking, onLocationConfirm, onCancel }: { isPicking: boolean, onLocationConfirm: (latlng: L.LatLng) => void, onCancel: () => void }) {
     const [position, setPosition] = useState<L.LatLng | null>(null);
     const map = useMap();
@@ -115,9 +109,12 @@ function LocationPicker({ isPicking, onLocationConfirm, onCancel }: { isPicking:
     );
 }
 
-// --- MAIN MAP VIEW COMPONENT ---
-export default function MapView() {
-    // State
+const locationCoordinates: { [key: string]: [number, number] } = {
+  'montalban': [14.7739, 121.1390],
+  'sanmateo': [14.6939, 121.1169],
+};
+
+export default function MapView({ location }: { location: string }) {
     const [pickingMode, setPickingMode] = useState<PickingMode>(null);
     const [pickedLocation, setPickedLocation] = useState<L.LatLng | null>(null);
     const [isFloodModalOpen, setIsFloodModalOpen] = useState(false);
@@ -125,9 +122,8 @@ export default function MapView() {
     const [floodReports, setFloodReports] = useState<FloodReportDoc[]>([]);
     const [evacuationCenters, setEvacuationCenters] = useState<EvacuationCenterDoc[]>([]);
     
-    const initialPosition: L.LatLngExpression = [14.7739, 121.1390];
+    const initialPosition: L.LatLngExpression = locationCoordinates[location.toLowerCase()] || [14.7739, 121.1390]; // Default to Montalban
 
-    // Data Fetching from Firestore
     useEffect(() => {
         const reportsCollection = collection(db, 'flood_reports');
         const unsubReports = onSnapshot(reportsCollection, (snapshot) => {
@@ -147,7 +143,6 @@ export default function MapView() {
         };
     }, []);
 
-    // Handlers
     const handleLocationConfirm = (latlng: L.LatLng) => {
         setPickedLocation(latlng);
         if (pickingMode === 'flood') setIsFloodModalOpen(true);

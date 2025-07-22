@@ -10,17 +10,26 @@ interface PostAidModalProps {
     onSubmit: (data: AidPostData) => void;
 }
 
+// A list of locations. You can expand this list as needed.
+const locations = [
+    "Ampid", "Balite", "Burgos", "Geronimo", "Macabud", "Manggahan", "Mascap",
+    "Puray", "Rosario", "San Isidro", "San Jose", "San Rafael", "Other"
+];
+
 export default function PostAidModal({ isOpen, onClose, onSubmit }: PostAidModalProps) {
     const [postType, setPostType] = useState<AidTab>('requests');
     const [title, setTitle] = useState('');
-    const [location, setLocation] = useState('');
+    const [selectedLocation, setSelectedLocation] = useState('San Jose');
+    const [addressDetails, setAddressDetails] = useState('');
     const [details, setDetails] = useState('');
     const [offerType, setOfferType] = useState<OfferType>('Other');
 
     useEffect(() => {
         if (isOpen) {
+            // Reset form fields when modal opens
             setTitle('');
-            setLocation('');
+            setSelectedLocation('San Jose');
+            setAddressDetails('');
             setDetails('');
             setOfferType('Other');
             setPostType('requests');
@@ -31,11 +40,21 @@ export default function PostAidModal({ isOpen, onClose, onSubmit }: PostAidModal
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!title.trim() || !location.trim() || !details.trim()) {
+        if (!title.trim() || !addressDetails.trim() || !details.trim()) {
             alert("Please fill out all required fields.");
             return;
         }
-        const postData: AidPostData = { type: postType, title, location, details };
+        
+        // Combine the selected location and address details into a single location string
+        const fullLocation = `${addressDetails} (Brgy. ${selectedLocation})`;
+
+        const postData: AidPostData = {
+            type: postType,
+            title,
+            location: fullLocation,
+            details
+        };
+
         if (postType === 'offers') {
             postData.offerType = offerType;
         }
@@ -88,10 +107,19 @@ export default function PostAidModal({ isOpen, onClose, onSubmit }: PostAidModal
                         <FormLabel htmlFor="title">Title / Headline</FormLabel>
                         <InputField type="text" id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Need Drinking Water for 2" required />
                     </div>
+                    
                     <div>
-                        <FormLabel htmlFor="location">Location / Barangay</FormLabel>
-                        <InputField type="text" id="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g., Brgy. San Jose, Sitio Wawa" required />
+                        <FormLabel htmlFor="location-select">Barangay / City</FormLabel>
+                        <SelectField id="location-select" value={selectedLocation} onChange={(e) => setSelectedLocation(e.target.value)}>
+                            {locations.map(loc => <option key={loc} value={loc}>{loc}</option>)}
+                        </SelectField>
                     </div>
+
+                    <div>
+                        <FormLabel htmlFor="address-details">Full Address / Landmark</FormLabel>
+                        <InputField type="text" id="address-details" value={addressDetails} onChange={(e) => setAddressDetails(e.target.value)} placeholder="e.g., 123 Rizal Ave, near the green gate" required />
+                    </div>
+
                     <div>
                         <FormLabel htmlFor="details">Details & Contact Info</FormLabel>
                         <textarea

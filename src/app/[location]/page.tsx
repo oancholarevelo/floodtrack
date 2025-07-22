@@ -1,0 +1,83 @@
+"use client";
+
+import { useState, ComponentType } from 'react';
+import { Home, Map, HeartHandshake, Phone } from 'lucide-react';
+import dynamic from 'next/dynamic';
+import Image from 'next/image';
+
+// Define a props interface for components that need the location
+interface LocationProps {
+  location: string;
+}
+
+// Dynamically import views and type them correctly
+const HomeView = dynamic<LocationProps>(() => import('../../components/HomeView'));
+const MapView = dynamic<LocationProps>(() => import('../../components/MapView'), { ssr: false });
+const AidView = dynamic(() => import('../../components/AidView'));
+const HotlinesView = dynamic(() => import('../../components/HotlinesView'));
+
+type View = 'home' | 'map' | 'aid' | 'hotlines';
+
+export default function Page({ params }: { params: { location: string } }) {
+  const [activeView, setActiveView] = useState<View>('home');
+  
+  // FIX: Access params directly. This is the correct way for now and removes the crash.
+  const { location } = params;
+  
+  const formattedLocation = location.charAt(0).toUpperCase() + location.slice(1);
+
+  const renderView = () => {
+    switch (activeView) {
+      case 'map':
+        return <MapView location={location} />;
+      case 'aid':
+        return <AidView />;
+      case 'hotlines':
+        return <HotlinesView />;
+      case 'home':
+      default:
+        return <HomeView location={location} />;
+    }
+  };
+
+  const mainContainerClass = activeView === 'map'
+    ? 'flex-grow'
+    : 'flex-grow overflow-y-auto pb-24';
+
+  const NavItem = ({ view, icon: Icon, label }: { view: View, icon: React.ElementType, label: string }) => (
+    <button
+      onClick={() => setActiveView(view)}
+      className={`flex flex-col items-center justify-center w-full h-16 transition-colors duration-300 ${activeView === view ? 'text-cyan-600' : 'text-slate-500 hover:text-cyan-500'}`}
+    >
+      <Icon size={24} className={activeView === view ? 'scale-110' : ''} />
+      <span className="text-xs mt-1 font-semibold">{label}</span>
+    </button>
+  );
+
+  return (
+    <div className="flex flex-col h-screen relative">
+      <header className="bg-white px-4 py-2 pt-[calc(0.5rem+env(safe-area-inset-top))] z-[2000] sticky top-0 flex items-center justify-start border-b border-slate-100">
+        <div className="flex items-center space-x-3">
+          <Image src="/logo.png" alt="FloodTrack Logo" width={40} height={40} priority />
+          <div>
+            <h1 className="text-xl font-bold text-slate-800">FloodTrack</h1>
+            <p className="text-sm text-slate-500">{formattedLocation} Flood Response</p>
+          </div>
+        </div>
+      </header>
+
+      <main className={`${mainContainerClass} bg-slate-50`}>
+        {renderView()}
+      </main>
+
+      <footer className="fixed bottom-0 left-0 right-0 max-w-5xl mx-auto px-2 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] z-[2000] bg-transparent">
+        <nav className="flex justify-around bg-white/70 backdrop-blur-lg rounded-full shadow-lg border border-slate-100">
+          <NavItem view="home" icon={Home} label="Home" />
+          <NavItem view="map" icon={Map} label="Flood Map" />
+          <NavItem view="aid" icon={HeartHandshake} label="Community Aid" />
+          <NavItem view="hotlines" icon={Phone} label="Hotlines" />
+        </nav>
+      </footer>
+    </div>
+  );
+}
