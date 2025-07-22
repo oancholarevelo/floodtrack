@@ -19,15 +19,16 @@ interface HomeViewProps {
 
 const locationCoordinates: { [key: string]: { lat: number; lon: number } } = {
   'montalban': { lat: 14.7169, lon: 121.1244 },
-  'san mateo': { lat: 14.6939, lon: 121.1169 },
+  'sanmateo': { lat: 14.6939, lon: 121.1169 },
   'marikina': { lat: 14.6331, lon: 121.0993 },
   'taguig': { lat: 14.5176, lon: 121.0509 },
+  'quezoncity': { lat: 14.6760, lon: 121.0437 }, // Add this line
 };
 
 const lguFacebookPages: { [key: string]: { name: string; url: string } } = {
     'montalban': { name: "Bangon Bagong Montalban", url: "https://www.facebook.com/BangonBagongMontalban" },
-    'san mateo': { name: "San Mateo PIO", url: "https://www.facebook.com/sanmateopio" },
     'taguig': { name: "I Love Taguig", url: "https://www.facebook.com/taguigcity" },
+    'quezoncity': { name: "Quezon City Government", url: "https://www.facebook.com/QCGov" }, // Add this line
     'default': { name: "NDRRMC", url: "https://www.facebook.com/NDRRMC" }
 };
 
@@ -63,21 +64,39 @@ export default function HomeView({ location }: HomeViewProps) {
   useEffect(() => {
     const fetchWeather = async () => {
       setLoadingWeather(true);
+      setWeatherError(null); // Reset error state on new fetch
       const apiKey = process.env.NEXT_PUBLIC_WEATHER_API_KEY;
+
       if (!apiKey || apiKey === "YOUR_API_KEY") {
         setWeatherError("Weather API key not configured.");
         setLoadingWeather(false);
         return;
       }
+
       try {
-        const response = await fetch(`https://api.weatherapi.com/v1/current.json?key=${apiKey}&q=${location}&aqi=no`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch weather data.');
+        // Use coordinates for a more reliable API call
+        const coords = locationCoordinates[location.toLowerCase()];
+        if (!coords) {
+          throw new Error(`Location "${location}" is not configured in locationCoordinates.`);
         }
+        
+        // Format for the API: latitude,longitude
+        const apiQuery = `${coords.lat},${coords.lon}`;
+
+        const response = await fetch(`https://api.weatherapi.com/v1/current.json?key=${apiKey}&q=${apiQuery}&aqi=no`);
+        
+        if (!response.ok) {
+          // Log the actual error from the API for better debugging
+          const errorData = await response.json();
+          console.error("WeatherAPI Error:", errorData.error.message);
+          throw new Error('Failed to fetch weather data from the API.');
+        }
+
         const data = await response.json();
         setWeather(data.current);
       } catch (error) {
-        setWeatherError("Could not load weather data.");
+        // Set a more descriptive error message
+        setWeatherError(error instanceof Error ? error.message : "An unknown error occurred.");
         console.error(error);
       } finally {
         setLoadingWeather(false);
