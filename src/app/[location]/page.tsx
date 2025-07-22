@@ -10,11 +10,22 @@ interface LocationProps {
   location: string;
 }
 
+interface MapViewProps {
+    location: string;
+    mapCenter?: { lat: number; lng: number };
+    onEditFromMap: () => void;
+}
+
+interface ListViewProps {
+    location: string;
+    onViewOnMap: (coords: { lat: number; lng: number }) => void;
+}
+
 const HomeView = dynamic<LocationProps>(() => import('../../components/HomeView'));
-const MapView = dynamic<any>(() => import('../../components/MapView'), { ssr: false });
+const MapView = dynamic<MapViewProps>(() => import('../../components/MapView'), { ssr: false });
 const AidView = dynamic<LocationProps>(() => import('../../components/AidView'));
 const HotlinesView = dynamic(() => import('../../components/HotlinesView'));
-const ListView = dynamic<any>(() => import('../../components/ListView'));
+const ListView = dynamic<ListViewProps>(() => import('../../components/ListView'));
 
 type View = 'home' | 'map' | 'aid' | 'hotlines' | 'list';
 

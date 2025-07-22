@@ -8,7 +8,7 @@ import { db } from '../lib/firebase.js';
 import { collection, onSnapshot, addDoc, GeoPoint, Timestamp, serverTimestamp, query, where } from 'firebase/firestore';
 import ReportFloodModal from './ReportFloodModal';
 import AddSafeAreaModal, { SafeAreaData } from './AddSafeAreaModal';
-import { Target, X, Check, ShieldCheck, Siren, ShieldPlus, LocateFixed, Edit } from 'lucide-react';
+import { Target, X, Check, ShieldCheck, Siren, ShieldPlus, LocateFixed } from 'lucide-react';
 
 // Fix for default marker icon issue
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';

@@ -26,11 +26,10 @@ export interface EvacuationCenterDoc {
 }
 
 interface ListViewProps {
-    location: string;
     onViewOnMap: (coords: { lat: number; lng: number }) => void;
 }
 
-export default function ListView({ location, onViewOnMap }: ListViewProps) {
+export default function ListView({ onViewOnMap }: ListViewProps) {
     const [floodReports, setFloodReports] = useState<FloodReportDoc[]>([]);
     const [safeAreas, setSafeAreas] = useState<EvacuationCenterDoc[]>([]);
     const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);

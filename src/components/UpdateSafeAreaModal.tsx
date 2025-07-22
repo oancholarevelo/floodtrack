@@ -53,7 +53,7 @@ export default function UpdateSafeAreaModal({ isOpen, onClose, safeArea }: Updat
                     </div>
                     <div>
                         <label htmlFor="update-status" className="block text-sm font-medium text-slate-700 mb-1">Current Status</label>
-                        <select id="update-status" value={status} onChange={(e) => setStatus(e.target.value as any)} className="mt-1 w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500">
+                        <select id="update-status" value={status} onChange={(e) => setStatus(e.target.value as 'Open' | 'Full' | 'Closed')} className="mt-1 w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500">
                             <option>Open</option>
                             <option>Full</option>
                             <option>Closed</option>

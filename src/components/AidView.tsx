@@ -58,6 +58,7 @@ export default function AidView({ location }: { location: string }) {
 
     const handleAidSubmit = async (postData: AidPostData) => {
         const collectionName = postData.type === 'requests' ? 'aid_requests' : 'aid_offers';
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { type: _, ...data } = postData;
         const newPost = { ...data, createdAt: serverTimestamp(), status: 'active' };
 
