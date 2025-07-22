@@ -4,10 +4,10 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-// Removed unused AidPostData from this import
-import { AidTab, OfferType } from '../../components/AidView'; 
+import { AidTab, OfferType } from '../../components/AidView';
 import { db } from '../../lib/firebase';
-import { collection, addDoc, serverTimestamp, GeoPoint, Timestamp } from 'firebase/firestore';
+// Import FieldValue alongside the other Firestore types
+import { collection, addDoc, serverTimestamp, GeoPoint, Timestamp, FieldValue } from 'firebase/firestore';
 import { ArrowLeft } from 'lucide-react';
 import Image from 'next/image';
 
@@ -16,7 +16,8 @@ interface NewPost {
     title: string;
     location: string;
     details: string;
-    createdAt: any; // Accepts FieldValue from serverTimestamp()
+    // Allow createdAt to be a Timestamp (when read) or a FieldValue (when written)
+    createdAt: Timestamp | FieldValue;
     status: string;
     offerType?: OfferType;
     coordinates?: GeoPoint;
@@ -77,7 +78,8 @@ function PostAidForm() {
         const fullLocation = `${addressDetails}, Brgy. ${barangay}, ${city}`;
         const collectionName = postType === 'requests' ? 'aid_requests' : 'aid_offers';
         
-        const postData: Partial<NewPost> = { // Use the new type here
+        // No change is needed here, but now it correctly matches the updated NewPost type
+        const postData: Partial<NewPost> = {
             title,
             location: fullLocation,
             details,
