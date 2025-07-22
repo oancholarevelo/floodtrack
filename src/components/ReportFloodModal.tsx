@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from 'react';
-import { FloodLevel } from './MapView';
 import { X } from 'lucide-react';
+
+// Define FloodLevel type here or import from a shared types file
+export type FloodLevel = 'Ankle-deep' | 'Knee-deep' | 'Waist-deep';
 
 interface ReportFloodModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSubmit: (level: FloodLevel) => void;
+    onSubmit: (level: FloodLevel, status: 'active') => void;
 }
 
 export default function ReportFloodModal({ isOpen, onClose, onSubmit }: ReportFloodModalProps) {
@@ -17,7 +19,7 @@ export default function ReportFloodModal({ isOpen, onClose, onSubmit }: ReportFl
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSubmit(selectedLevel);
+        onSubmit(selectedLevel, 'active');
     };
 
     const LevelOption = ({ level, current, onChange }: { level: FloodLevel, current: FloodLevel, onChange: (level: FloodLevel) => void }) => {

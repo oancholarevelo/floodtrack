@@ -150,9 +150,14 @@ export default function MapView({ location }: { location: string }) {
         setPickingMode(null);
     };
     
-    const handleFloodReportSubmit = async (level: FloodLevel) => {
+    const handleFloodReportSubmit = async (level: FloodLevel, status: 'active') => {
         if (!pickedLocation) return;
-        await addDoc(collection(db, 'flood_reports'), { level, location: new GeoPoint(pickedLocation.lat, pickedLocation.lng), createdAt: serverTimestamp() });
+        await addDoc(collection(db, 'flood_reports'), { 
+            level, 
+            status, // Add status to the new document
+            location: new GeoPoint(pickedLocation.lat, pickedLocation.lng), 
+            createdAt: serverTimestamp() 
+        });
         setIsFloodModalOpen(false);
         setPickedLocation(null);
     };
@@ -217,7 +222,11 @@ export default function MapView({ location }: { location: string }) {
                 </div>
             )}
 
-            <ReportFloodModal isOpen={isFloodModalOpen} onClose={() => setIsFloodModalOpen(false)} onSubmit={handleFloodReportSubmit} />
+            <ReportFloodModal 
+                isOpen={isFloodModalOpen} 
+                onClose={() => setIsFloodModalOpen(false)} 
+                onSubmit={handleFloodReportSubmit} 
+            />
             <AddSafeAreaModal isOpen={isSafeAreaModalOpen} onClose={() => setIsSafeAreaModalOpen(false)} onSubmit={handleSafeAreaSubmit} />
         </div>
     );

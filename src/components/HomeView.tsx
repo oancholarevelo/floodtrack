@@ -160,7 +160,9 @@ export default function HomeView({ location }: HomeViewProps) {
           className="mt-4 w-full bg-cyan-600 text-white font-semibold py-2.5 rounded-lg hover:bg-cyan-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 flex items-center justify-center space-x-2"
         >
           <ExternalLink size={16} />
-          <span>View More on Facebook ({lguPage.name})</span>
+          {/* FIX: Use shorter, responsive text for the button */}
+          <span className="sm:hidden">View on Facebook</span>
+          <span className="hidden sm:inline">View More on Facebook</span>
         </a>
       </Card>
     </div>

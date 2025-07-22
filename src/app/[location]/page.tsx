@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
-import { Home, Map, HeartHandshake, Phone } from 'lucide-react';
+import { Home, Map, HeartHandshake, Phone, List } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 
@@ -14,8 +14,10 @@ const HomeView = dynamic<LocationProps>(() => import('../../components/HomeView'
 const MapView = dynamic<LocationProps>(() => import('../../components/MapView'), { ssr: false });
 const AidView = dynamic<LocationProps>(() => import('../../components/AidView'));
 const HotlinesView = dynamic(() => import('../../components/HotlinesView'));
+const ListView = dynamic<LocationProps>(() => import('../../components/ListView'));
 
-type View = 'home' | 'map' | 'aid' | 'hotlines';
+// Add 'list' to the available views
+type View = 'home' | 'map' | 'aid' | 'hotlines' | 'list';
 
 export default function Page() {
   const [activeView, setActiveView] = useState<View>('home');
@@ -33,6 +35,8 @@ export default function Page() {
         return <AidView location={location} />;
       case 'hotlines':
         return <HotlinesView />;
+      case 'list': // Add the new case
+        return <ListView location={location} />;
       case 'home':
       default:
         return <HomeView location={location} />;
@@ -73,6 +77,8 @@ export default function Page() {
         <nav className="flex justify-around bg-white/70 backdrop-blur-lg rounded-full shadow-lg border border-slate-100">
           <NavItem view="home" icon={Home} label="Home" />
           <NavItem view="map" icon={Map} label="Flood Map" />
+          {/* Add the new NavItem */}
+          <NavItem view="list" icon={List} label="List View" />
           <NavItem view="aid" icon={HeartHandshake} label="Community Aid" />
           <NavItem view="hotlines" icon={Phone} label="Hotlines" />
         </nav>
