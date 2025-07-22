@@ -1,3 +1,5 @@
+// src/components/ListView.tsx
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -152,7 +154,7 @@ export default function ListView({ location, onViewOnMap, userLocation }: ListVi
                         {floodReports.length > 0 ? floodReports.map(report => (
                             <div key={report.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-md transition-all hover:shadow-lg">
                                 <div className="flex justify-between items-start">
-                                    <div className="flex-grow">
+                                    <div className="flex-grow min-w-0">
                                         <span className={`inline-block px-3 py-1 text-xs font-semibold rounded-full ${
                                             report.level === 'Ankle-deep' ? 'bg-yellow-100 text-yellow-800' :
                                             report.level === 'Knee-deep' ? 'bg-orange-100 text-orange-800' :
@@ -196,7 +198,7 @@ export default function ListView({ location, onViewOnMap, userLocation }: ListVi
                         {safeAreas.length > 0 ? safeAreas.map(area => (
                             <div key={area.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-md transition-all hover:shadow-lg">
                                 <div className="flex justify-between items-start">
-                                    <div className="flex-grow">
+                                    <div className="flex-grow min-w-0">
                                         <p className="font-bold text-lg text-slate-800">{area.name}</p>
                                         {area.distance !== undefined && (
                                             <div className="text-xs font-semibold text-cyan-700 flex items-center mt-1">
