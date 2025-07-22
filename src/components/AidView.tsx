@@ -149,7 +149,7 @@ export default function AidView() {
     const currentList = activeTab === 'requests' ? filteredRequests : filteredOffers;
 
     return (
-        <div className="h-full w-full flex flex-col">
+        <div className="h-full w-full flex flex-col pb-24">
             <div className="p-4 bg-white border-b border-slate-100">
                 <div className="flex bg-slate-100 rounded-full p-1 mb-4">
                     <TabButton tab="requests" label="Need Help" icon={<HandHelping size={16} />} />
@@ -181,7 +181,7 @@ export default function AidView() {
                 )}
             </div>
 
-            <div className="sticky bottom-4 right-4 z-10 mr-4 self-end">
+            <div className="absolute bottom-24 right-4 z-40">
                 <button
                     onClick={() => setIsPostModalOpen(true)}
                     className="bg-cyan-600 text-white font-bold py-3 px-5 rounded-full shadow-lg hover:bg-cyan-700 flex items-center space-x-2 transition-transform duration-200 hover:scale-105">

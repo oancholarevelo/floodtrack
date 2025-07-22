@@ -10,7 +10,7 @@ import { db } from '../lib/firebase.js';
 import { collection, onSnapshot, addDoc, GeoPoint, Timestamp, serverTimestamp } from 'firebase/firestore';
 import ReportFloodModal from './ReportFloodModal';
 import AddSafeAreaModal, { SafeAreaData } from './AddSafeAreaModal';
-import { Target, X, Check, ShieldCheck, Siren, ShieldPlus } from 'lucide-react';
+import { Target, X, Check, ShieldCheck, Siren, ShieldPlus, LocateFixed } from 'lucide-react';
 
 // Fix for default marker icon issue
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -56,6 +56,30 @@ const evacuationCenterIcon = L.divIcon({
     html: `<div style="background-color: #16a34a; width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.3); border: 2px solid white;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></div>`,
     className: 'custom-evacuation-icon', iconSize: [32, 32], iconAnchor: [16, 16],
 });
+
+// --- NEW COMPONENT: LocateControl ---
+function LocateControl() {
+    const map = useMap();
+
+    const handleLocate = () => {
+        map.locate().on('locationfound', function (e) {
+            map.flyTo(e.latlng, 16);
+        }).on('locationerror', function(e){
+            console.error(e);
+            alert("Could not access your location. Please ensure location services are enabled.");
+        });
+    };
+
+    return (
+        <div className="leaflet-top leaflet-right">
+            <div className="leaflet-control leaflet-bar">
+                <a href="#" title="Locate me" role="button" onClick={(e) => { e.preventDefault(); handleLocate(); }}>
+                    <LocateFixed size={18} style={{ margin: '6px' }} />
+                </a>
+            </div>
+        </div>
+    );
+}
 
 // --- LOCATION PICKER COMPONENT ---
 function LocationPicker({ isPicking, onLocationConfirm, onCancel }: { isPicking: boolean, onLocationConfirm: (latlng: L.LatLng) => void, onCancel: () => void }) {
@@ -182,10 +206,11 @@ export default function MapView() {
                 ))}
                 
                 <LocationPicker isPicking={pickingMode !== null} onLocationConfirm={handleLocationConfirm} onCancel={() => setPickingMode(null)} />
+                <LocateControl />
             </MapContainer>
 
             {pickingMode === null && (
-                <div className="absolute bottom-4 right-4 z-[1000] flex flex-col space-y-3">
+                <div className="absolute bottom-24 right-4 z-[1000] flex flex-col space-y-3">
                     <button onClick={() => setPickingMode('safe_area')} className="bg-green-600 text-white font-bold py-3 px-4 rounded-full shadow-lg hover:bg-green-700 transition-transform duration-200 hover:scale-105 flex items-center space-x-2">
                         <ShieldPlus size={20}/>
                         <span>Add Safe Area</span>

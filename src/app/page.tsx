@@ -1,15 +1,16 @@
 "use client";
 
 import { useState } from 'react';
-import { Home, Map, HeartHandshake } from 'lucide-react';
+import { Home, Map, HeartHandshake, Phone } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
 // Dynamically import views
 const HomeView = dynamic(() => import('../components/HomeView'));
 const MapView = dynamic(() => import('../components/MapView'), { ssr: false });
 const AidView = dynamic(() => import('../components/AidView'));
+const HotlinesView = dynamic(() => import('../components/HotlinesView'));
 
-type View = 'home' | 'map' | 'aid';
+type View = 'home' | 'map' | 'aid' | 'hotlines';
 
 export default function Page() {
   const [activeView, setActiveView] = useState<View>('home');
@@ -20,6 +21,8 @@ export default function Page() {
         return <MapView />;
       case 'aid':
         return <AidView />;
+      case 'hotlines':
+        return <HotlinesView />;
       case 'home':
       default:
         return <HomeView />;
@@ -46,6 +49,7 @@ export default function Page() {
         </div>
       </header>
 
+      {/* FIX: Re-added pb-24 to ensure content area has space for the fixed footer */}
       <main className="flex-grow overflow-y-auto bg-slate-50 pb-24">
         {renderView()}
       </main>
@@ -55,6 +59,7 @@ export default function Page() {
           <NavItem view="home" icon={Home} label="Home" />
           <NavItem view="map" icon={Map} label="Flood Map" />
           <NavItem view="aid" icon={HeartHandshake} label="Community Aid" />
+          <NavItem view="hotlines" icon={Phone} label="Hotlines" />
         </nav>
       </footer>
     </div>
