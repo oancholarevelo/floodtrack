@@ -57,22 +57,20 @@ const evacuationCenterIcon = L.divIcon({
     className: 'custom-evacuation-icon', iconSize: [32, 32], iconAnchor: [16, 16],
 });
 
-// --- NEW COMPONENT: LocateControl ---
+// --- MAP CONTROL COMPONENTS ---
 function LocateControl() {
     const map = useMap();
-
     const handleLocate = () => {
-        map.locate().on('locationfound', function (e) {
+        map.locate().on('locationfound', (e) => {
             map.flyTo(e.latlng, 16);
-        }).on('locationerror', function(e){
+        }).on('locationerror', (e) => {
             console.error(e);
             alert("Could not access your location. Please ensure location services are enabled.");
         });
     };
-
     return (
         <div className="leaflet-top leaflet-right">
-            <div className="leaflet-control leaflet-bar">
+            <div className="leaflet-control leaflet-bar bg-white">
                 <a href="#" title="Locate me" role="button" onClick={(e) => { e.preventDefault(); handleLocate(); }}>
                     <LocateFixed size={18} style={{ margin: '6px' }} />
                 </a>
@@ -81,22 +79,20 @@ function LocateControl() {
     );
 }
 
-// --- LOCATION PICKER COMPONENT ---
-function LocationPicker({ isPicking, onLocationConfirm, onCancel }: { isPicking: boolean, onLocationConfirm: (latlng: L.LatLng) => void, onCancel: () => void }) {
+function LocationPicker({ onLocationConfirm, onCancel }: { onLocationConfirm: (latlng: L.LatLng) => void, onCancel: () => void }) {
     const [position, setPosition] = useState<L.LatLng | null>(null);
     const map = useMap();
 
     useEffect(() => {
-        if (isPicking) {
-            map.dragging.enable(); map.scrollWheelZoom.enable();
-            setPosition(map.getCenter());
-            const onMove = () => setPosition(map.getCenter());
-            map.on('move', onMove);
-            return () => { map.off('move', onMove); };
-        }
-    }, [isPicking, map]);
+        map.dragging.enable();
+        map.scrollWheelZoom.enable();
+        setPosition(map.getCenter());
+        const onMove = () => setPosition(map.getCenter());
+        map.on('move', onMove);
+        return () => { map.off('move', onMove); };
+    }, [map]);
 
-    if (!isPicking || !position) return null;
+    if (!position) return null;
 
     return (
         <>
@@ -117,7 +113,6 @@ function LocationPicker({ isPicking, onLocationConfirm, onCancel }: { isPicking:
 
 // --- MAIN MAP VIEW COMPONENT ---
 export default function MapView() {
-    // State
     const [pickingMode, setPickingMode] = useState<PickingMode>(null);
     const [pickedLocation, setPickedLocation] = useState<L.LatLng | null>(null);
     const [isFloodModalOpen, setIsFloodModalOpen] = useState(false);
@@ -127,27 +122,16 @@ export default function MapView() {
     
     const initialPosition: L.LatLngExpression = [14.7739, 121.1390];
 
-    // Data Fetching from Firestore
     useEffect(() => {
-        const reportsCollection = collection(db, 'flood_reports');
-        const unsubReports = onSnapshot(reportsCollection, (snapshot) => {
-            const reportsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FloodReportDoc));
-            setFloodReports(reportsData);
+        const reportsUnsub = onSnapshot(collection(db, 'flood_reports'), (snapshot) => {
+            setFloodReports(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FloodReportDoc)));
         });
-
-        const centersCollection = collection(db, 'evacuation_centers');
-        const unsubCenters = onSnapshot(centersCollection, (snapshot) => {
-            const centersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EvacuationCenterDoc));
-            setEvacuationCenters(centersData);
+        const centersUnsub = onSnapshot(collection(db, 'evacuation_centers'), (snapshot) => {
+            setEvacuationCenters(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EvacuationCenterDoc)));
         });
-
-        return () => {
-            unsubReports();
-            unsubCenters();
-        };
+        return () => { reportsUnsub(); centersUnsub(); };
     }, []);
 
-    // Handlers
     const handleLocationConfirm = (latlng: L.LatLng) => {
         setPickedLocation(latlng);
         if (pickingMode === 'flood') setIsFloodModalOpen(true);
@@ -173,11 +157,11 @@ export default function MapView() {
         if (!timestamp) return "Just now";
         const seconds = Math.floor((new Date().getTime() - timestamp.toDate().getTime()) / 1000);
         let interval = Math.floor(seconds / 60);
-        if (interval < 60) return interval + " minutes ago";
+        if (interval < 60) return `${interval} minutes ago`;
         interval = Math.floor(interval / 60);
-        if (interval < 24) return interval + " hours ago";
+        if (interval < 24) return `${interval} hours ago`;
         interval = Math.floor(interval / 24);
-        return interval + " days ago";
+        return `${interval} days ago`;
     };
 
     return (
@@ -205,7 +189,7 @@ export default function MapView() {
                     </Marker>
                 ))}
                 
-                <LocationPicker isPicking={pickingMode !== null} onLocationConfirm={handleLocationConfirm} onCancel={() => setPickingMode(null)} />
+                {pickingMode !== null && <LocationPicker onLocationConfirm={handleLocationConfirm} onCancel={() => setPickingMode(null)} />}
                 <LocateControl />
             </MapContainer>
 
