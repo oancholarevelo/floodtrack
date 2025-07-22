@@ -49,8 +49,8 @@ export default function Page() {
         </div>
       </header>
 
-      {/* FIX: Re-added pb-24 to ensure content area has space for the fixed footer */}
-      <main className="flex-grow overflow-y-auto bg-slate-50 pb-24">
+      {/* FIX: Added 'relative' class to make this the positioning container for absolute children */}
+      <main className="flex-grow overflow-y-auto bg-slate-50 pb-24 relative">
         {renderView()}
       </main>
 
