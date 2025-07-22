@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Wind, Droplets, AlertTriangle } from 'lucide-react';
+import { Wind, Droplets, AlertTriangle, ExternalLink } from 'lucide-react';
 import Image from 'next/image';
 
 // A more robust WeatherData interface
@@ -140,6 +140,15 @@ export default function HomeView() {
                 allow="encrypted-media">
             </iframe>
         </div>
+        <a 
+          href="https://www.facebook.com/BangonBagongMontalban" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="mt-4 w-full bg-cyan-600 text-white font-semibold py-2.5 rounded-lg hover:bg-cyan-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 flex items-center justify-center space-x-2"
+        >
+          <ExternalLink size={16} />
+          <span>View More on Facebook</span>
+        </a>
       </Card>
     </div>
   );

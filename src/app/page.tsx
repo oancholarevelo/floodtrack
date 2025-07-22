@@ -46,10 +46,8 @@ export default function Page() {
   );
 
   return (
-    // FIX: Added 'relative' to ensure absolutely positioned children are contained correctly
     <div className="flex flex-col h-screen relative">
-      <header className="bg-white px-4 py-2 pt-[calc(0.5rem+env(safe-area-inset-top))] z-[60] sticky top-0 flex items-center justify-center border-b border-slate-100">
-        {/* FIX: Added logo and updated layout for it */}
+      <header className="bg-white px-4 py-2 pt-[calc(0.5rem+env(safe-area-inset-top))] z-[2000] sticky top-0 flex items-center justify-center border-b border-slate-100">
         <div className="text-center flex flex-col items-center">
           <Image src="/logo.png" alt="Ahon Montalban Logo" width={40} height={40} className="mb-1" priority />
           <h1 className="text-xl font-bold text-slate-800">Ahon Montalban</h1>
@@ -57,12 +55,11 @@ export default function Page() {
         </div>
       </header>
 
-      {/* FIX: Main container class is now conditional based on the active view */}
       <main className={`${mainContainerClass} bg-slate-50`}>
         {renderView()}
       </main>
 
-      <footer className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto px-2 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] z-50 bg-transparent">
+      <footer className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto px-2 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] z-[2000] bg-transparent">
         <nav className="flex justify-around bg-white/70 backdrop-blur-lg rounded-full shadow-lg border border-slate-100">
           <NavItem view="home" icon={Home} label="Home" />
           <NavItem view="map" icon={Map} label="Flood Map" />
