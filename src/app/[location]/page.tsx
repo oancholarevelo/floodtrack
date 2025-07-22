@@ -49,7 +49,10 @@ export default function Page() {
     }
   }, []);
 
-  const formattedLocation = location.charAt(0).toUpperCase() + location.slice(1);
+  const formattedLocation = location
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
 
   const handleViewOnMap = (coords: { lat: number; lng: number }) => {
     setMapCenter(coords);

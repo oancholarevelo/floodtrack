@@ -19,17 +19,19 @@ interface HomeViewProps {
 
 const locationCoordinates: { [key: string]: { lat: number; lon: number } } = {
   'montalban': { lat: 14.7169, lon: 121.1244 },
-  'sanmateo': { lat: 14.6939, lon: 121.1169 },
+  'san mateo': { lat: 14.6939, lon: 121.1169 },
   'marikina': { lat: 14.6331, lon: 121.0993 },
+  'taguig': { lat: 14.5176, lon: 121.0509 },
 };
 
 const lguFacebookPages: { [key: string]: { name: string; url: string } } = {
     'montalban': { name: "Bangon Bagong Montalban", url: "https://www.facebook.com/BangonBagongMontalban" },
-    'sanmateo': { name: "San Mateo PIO", url: "https://www.facebook.com/sanmateopio" },
+    'san mateo': { name: "San Mateo PIO", url: "https://www.facebook.com/sanmateopio" },
+    'taguig': { name: "I Love Taguig", url: "https://www.facebook.com/taguigcity" },
     'default': { name: "NDRRMC", url: "https://www.facebook.com/NDRRMC" }
 };
 
-const rizalLocations = ['montalban', 'sanmateo'];
+const rizalLocations = ['montalban', 'san mateo'];
 
 const Card: React.FC<{children: React.ReactNode, className?: string, title: string}> = ({ children, className, title }) => (
     <div className={`bg-white p-4 rounded-xl border border-slate-100 shadow-sm ${className}`}>
@@ -56,7 +58,7 @@ export default function HomeView({ location }: HomeViewProps) {
   const currentLocation = location.toLowerCase();
   const coordinates = locationCoordinates[currentLocation] || locationCoordinates['montalban'];
   const isRizalLocation = rizalLocations.includes(currentLocation);
-  const lguPage = isRizalLocation ? lguFacebookPages[currentLocation] : lguFacebookPages['default'];
+  const lguPage = lguFacebookPages[currentLocation] || lguFacebookPages['default'];
 
   useEffect(() => {
     const fetchWeather = async () => {
