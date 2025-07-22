@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { Home, Map, HeartHandshake, Phone, List } from 'lucide-react';
 import dynamic from 'next/dynamic';
@@ -19,6 +19,7 @@ interface MapViewProps {
 interface ListViewProps {
     location: string;
     onViewOnMap: (coords: { lat: number; lng: number }) => void;
+    userLocation: { lat: number; lng: number } | null;
 }
 
 const HomeView = dynamic<LocationProps>(() => import('../../components/HomeView'));
@@ -32,10 +33,22 @@ type View = 'home' | 'map' | 'aid' | 'hotlines' | 'list';
 export default function Page() {
   const [activeView, setActiveView] = useState<View>('home');
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | undefined>(undefined);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   
   const params = useParams();
   const location = (params.location as string) || 'montalban';
   
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(position => {
+        setUserLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+      });
+    }
+  }, []);
+
   const formattedLocation = location.charAt(0).toUpperCase() + location.slice(1);
 
   const handleViewOnMap = (coords: { lat: number; lng: number }) => {
@@ -56,7 +69,7 @@ export default function Page() {
       case 'hotlines':
         return <HotlinesView />;
       case 'list':
-        return <ListView location={location} onViewOnMap={handleViewOnMap} />;
+        return <ListView location={location} onViewOnMap={handleViewOnMap} userLocation={userLocation} />;
       case 'home':
       default:
         return <HomeView location={location} />;

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
 import { collection, onSnapshot, doc, deleteDoc, GeoPoint, Timestamp, query, where } from 'firebase/firestore';
-import { Siren, ShieldCheck, MapPin, Users, Activity, Edit, Trash2, Eye, Clock } from 'lucide-react';
+import { Siren, ShieldCheck, MapPin, Users, Activity, Edit, Trash2, Eye, Clock, Navigation } from 'lucide-react';
 import UpdateSafeAreaModal from './UpdateSafeAreaModal';
 import UpdateFloodReportModal from './UpdateFloodReportModal';
 
@@ -13,7 +13,8 @@ export interface FloodReportDoc {
     location: GeoPoint;
     status: 'active' | 'subsided';
     createdAt: Timestamp;
-    updatedAt?: Timestamp; // Add this line
+    updatedAt?: Timestamp;
+    distance?: number;
 }
 
 export interface EvacuationCenterDoc {
@@ -23,13 +24,36 @@ export interface EvacuationCenterDoc {
     capacity?: number;
     status?: 'Open' | 'Full' | 'Closed';
     createdAt: Timestamp;
+    distance?: number;
 }
 
 interface ListViewProps {
+    location: string;
     onViewOnMap: (coords: { lat: number; lng: number }) => void;
+    userLocation: { lat: number; lng: number } | null;
 }
 
-export default function ListView({ onViewOnMap }: ListViewProps) {
+// Haversine formula to calculate distance between two lat/lng points in kilometers
+const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371; // Radius of the Earth in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // Distance in km
+};
+
+const locationCoordinates: { [key: string]: { lat: number; lng: number } } = {
+  'montalban': { lat: 14.7739, lng: 121.1390 },
+  'sanmateo': { lat: 14.6939, lng: 121.1169 },
+  'marikina': { lat: 14.6331, lng: 121.0993 },
+};
+
+
+export default function ListView({ location, onViewOnMap, userLocation }: ListViewProps) {
     const [floodReports, setFloodReports] = useState<FloodReportDoc[]>([]);
     const [safeAreas, setSafeAreas] = useState<EvacuationCenterDoc[]>([]);
     const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
@@ -38,14 +62,26 @@ export default function ListView({ onViewOnMap }: ListViewProps) {
     const [selectedFloodReport, setSelectedFloodReport] = useState<FloodReportDoc | null>(null);
 
     useEffect(() => {
+        const center = userLocation || locationCoordinates[location.toLowerCase()] || locationCoordinates['montalban'];
+
         const floodQuery = query(collection(db, 'flood_reports'), where('status', '==', 'active'));
         const unsubscribeFloods = onSnapshot(floodQuery, (snapshot) => {
-            const reports = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FloodReportDoc));
+            const reports = snapshot.docs.map(doc => {
+                const data = { id: doc.id, ...doc.data() } as FloodReportDoc;
+                const distance = getDistance(center.lat, center.lng, data.location.latitude, data.location.longitude);
+                return { ...data, distance };
+            });
+            reports.sort((a, b) => a.distance - b.distance);
             setFloodReports(reports);
         });
 
         const unsubscribeCenters = onSnapshot(collection(db, 'evacuation_centers'), (snapshot) => {
-            const centers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EvacuationCenterDoc));
+            const centers = snapshot.docs.map(doc => {
+                const data = { id: doc.id, ...doc.data() } as EvacuationCenterDoc;
+                const distance = getDistance(center.lat, center.lng, data.location.latitude, data.location.longitude);
+                return { ...data, distance };
+            });
+            centers.sort((a, b) => a.distance - b.distance);
             setSafeAreas(centers);
         });
 
@@ -53,7 +89,7 @@ export default function ListView({ onViewOnMap }: ListViewProps) {
             unsubscribeFloods();
             unsubscribeCenters();
         };
-    }, []);
+    }, [location, userLocation]);
 
     const handleDeleteFloodReport = async (id: string) => {
         if (window.confirm("Are you sure you want to permanently delete this flood report?")) {
@@ -107,6 +143,12 @@ export default function ListView({ onViewOnMap }: ListViewProps) {
                                     <div className="text-xs text-slate-500 flex items-center mt-2">
                                         <MapPin size={12} className="mr-1.5" />
                                         <span>Lat: {report.location.latitude.toFixed(4)}, Lon: {report.location.longitude.toFixed(4)}</span>
+                                        {report.distance !== undefined && (
+                                            <span className="ml-2 font-semibold text-cyan-700 flex items-center">
+                                                <Navigation size={12} className="mr-1"/>
+                                                {`~${report.distance.toFixed(1)} km away`}
+                                            </span>
+                                        )}
                                     </div>
                                     <div className="text-xs text-slate-400 flex items-center mt-1">
                                         <Clock size={12} className="mr-1.5" />
@@ -142,6 +184,12 @@ export default function ListView({ onViewOnMap }: ListViewProps) {
                             <div className="flex justify-between items-start">
                                 <div className="flex-grow">
                                     <p className="font-bold text-lg text-slate-800">{area.name}</p>
+                                     {area.distance !== undefined && (
+                                        <div className="text-xs font-semibold text-cyan-700 flex items-center mt-1">
+                                            <Navigation size={12} className="mr-1"/>
+                                            {`~${area.distance.toFixed(1)} km away`}
+                                        </div>
+                                    )}
                                     <div className="flex items-center space-x-4 mt-2 text-sm text-slate-600">
                                         <span className="flex items-center"><Activity size={14} className="mr-1.5 text-slate-400" /> Status: <span className="font-semibold ml-1">{area.status}</span></span>
                                         <span className="flex items-center"><Users size={14} className="mr-1.5 text-slate-400" /> Capacity: <span className="font-semibold ml-1">{area.capacity || 'N/A'}</span></span>
