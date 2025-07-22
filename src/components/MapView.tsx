@@ -5,10 +5,10 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { db } from '../lib/firebase.js';
-import { collection, onSnapshot, addDoc, GeoPoint, Timestamp, serverTimestamp } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc, GeoPoint, Timestamp, serverTimestamp, query, where } from 'firebase/firestore';
 import ReportFloodModal from './ReportFloodModal';
 import AddSafeAreaModal, { SafeAreaData } from './AddSafeAreaModal';
-import { Target, X, Check, ShieldCheck, Siren, ShieldPlus, LocateFixed } from 'lucide-react';
+import { Target, X, Check, ShieldCheck, Siren, ShieldPlus, LocateFixed, Edit } from 'lucide-react';
 
 // Fix for default marker icon issue
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -114,19 +114,35 @@ const locationCoordinates: { [key: string]: [number, number] } = {
   'sanmateo': [14.6939, 121.1169],
 };
 
-export default function MapView({ location }: { location: string }) {
+interface MapViewProps {
+    location: string;
+    mapCenter?: { lat: number; lng: number };
+    onEditFromMap: () => void;
+}
+
+const MapFocusController = ({ center }: { center?: { lat: number, lng: number }}) => {
+    const map = useMap();
+    useEffect(() => {
+        if (center) {
+            map.flyTo(center, 15);
+        }
+    }, [center, map]);
+    return null;
+};
+
+export default function MapView({ location, mapCenter, onEditFromMap }: MapViewProps) {
     const [pickingMode, setPickingMode] = useState<PickingMode>(null);
     const [pickedLocation, setPickedLocation] = useState<L.LatLng | null>(null);
     const [isFloodModalOpen, setIsFloodModalOpen] = useState(false);
     const [isSafeAreaModalOpen, setIsSafeAreaModalOpen] = useState(false);
     const [floodReports, setFloodReports] = useState<FloodReportDoc[]>([]);
     const [evacuationCenters, setEvacuationCenters] = useState<EvacuationCenterDoc[]>([]);
-    
-    const initialPosition: L.LatLngExpression = locationCoordinates[location.toLowerCase()] || [14.7739, 121.1390]; // Default to Montalban
+
+    const initialPosition: L.LatLngExpression = locationCoordinates[location.toLowerCase()] || [14.7739, 121.1390];
 
     useEffect(() => {
-        const reportsCollection = collection(db, 'flood_reports');
-        const unsubReports = onSnapshot(reportsCollection, (snapshot) => {
+        const reportsQuery = query(collection(db, 'flood_reports'), where('status', '==', 'active'));
+        const unsubReports = onSnapshot(reportsQuery, (snapshot) => {
             const reportsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FloodReportDoc));
             setFloodReports(reportsData);
         });
@@ -154,7 +170,7 @@ export default function MapView({ location }: { location: string }) {
         if (!pickedLocation) return;
         await addDoc(collection(db, 'flood_reports'), { 
             level, 
-            status, // Add status to the new document
+            status,
             location: new GeoPoint(pickedLocation.lat, pickedLocation.lng), 
             createdAt: serverTimestamp() 
         });
@@ -182,9 +198,11 @@ export default function MapView({ location }: { location: string }) {
 
     return (
         <div className="h-full w-full relative">
-            <MapContainer center={initialPosition} zoom={14} style={{ height: '100%', width: '100%' }} zoomControl={false}>
+            <MapContainer center={mapCenter || initialPosition} zoom={14} style={{ height: '100%', width: '100%' }} zoomControl={false}>
                 <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
                 
+                <MapFocusController center={mapCenter} />
+
                 {evacuationCenters.map(center => (
                     <Marker key={center.id} position={[center.location.latitude, center.location.longitude]} icon={evacuationCenterIcon}>
                         <Popup>
@@ -193,6 +211,7 @@ export default function MapView({ location }: { location: string }) {
                                 <div>Status: <span className="font-semibold text-green-600">{center.status || 'N/A'}</span></div>
                                 <div>Capacity: {center.capacity || 'N/A'}</div>
                             </div>
+                            <button onClick={onEditFromMap} className="w-full mt-2 text-sm text-cyan-600 font-semibold p-2 rounded-lg hover:bg-cyan-50">Edit Details</button>
                         </Popup>
                     </Marker>
                 ))}
@@ -201,6 +220,7 @@ export default function MapView({ location }: { location: string }) {
                         <Popup>
                             <div className="font-bold text-lg">{report.level}</div>
                             <div className="text-slate-500">Reported: {formatTimeAgo(report.createdAt)}</div>
+                            <button onClick={onEditFromMap} className="w-full mt-2 text-sm text-cyan-600 font-semibold p-2 rounded-lg hover:bg-cyan-50">Edit Details</button>
                         </Popup>
                     </Marker>
                 ))}

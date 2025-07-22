@@ -11,32 +11,41 @@ interface LocationProps {
 }
 
 const HomeView = dynamic<LocationProps>(() => import('../../components/HomeView'));
-const MapView = dynamic<LocationProps>(() => import('../../components/MapView'), { ssr: false });
+const MapView = dynamic<any>(() => import('../../components/MapView'), { ssr: false });
 const AidView = dynamic<LocationProps>(() => import('../../components/AidView'));
 const HotlinesView = dynamic(() => import('../../components/HotlinesView'));
-const ListView = dynamic<LocationProps>(() => import('../../components/ListView'));
+const ListView = dynamic<any>(() => import('../../components/ListView'));
 
-// Add 'list' to the available views
 type View = 'home' | 'map' | 'aid' | 'hotlines' | 'list';
 
 export default function Page() {
   const [activeView, setActiveView] = useState<View>('home');
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | undefined>(undefined);
   
   const params = useParams();
   const location = (params.location as string) || 'montalban';
   
   const formattedLocation = location.charAt(0).toUpperCase() + location.slice(1);
 
+  const handleViewOnMap = (coords: { lat: number; lng: number }) => {
+    setMapCenter(coords);
+    setActiveView('map');
+  };
+
+  const handleEditFromMap = () => {
+    setActiveView('list');
+  };
+
   const renderView = () => {
     switch (activeView) {
       case 'map':
-        return <MapView location={location} />;
+        return <MapView location={location} mapCenter={mapCenter} onEditFromMap={handleEditFromMap} />;
       case 'aid':
         return <AidView location={location} />;
       case 'hotlines':
         return <HotlinesView />;
-      case 'list': // Add the new case
-        return <ListView location={location} />;
+      case 'list':
+        return <ListView location={location} onViewOnMap={handleViewOnMap} />;
       case 'home':
       default:
         return <HomeView location={location} />;
@@ -77,7 +86,6 @@ export default function Page() {
         <nav className="flex justify-around bg-white/70 backdrop-blur-lg rounded-full shadow-lg border border-slate-100">
           <NavItem view="home" icon={Home} label="Home" />
           <NavItem view="map" icon={Map} label="Flood Map" />
-          {/* Add the new NavItem */}
           <NavItem view="list" icon={List} label="List View" />
           <NavItem view="aid" icon={HeartHandshake} label="Community Aid" />
           <NavItem view="hotlines" icon={Phone} label="Hotlines" />

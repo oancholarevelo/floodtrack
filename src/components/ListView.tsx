@@ -2,20 +2,21 @@
 
 import { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
-import { collection, onSnapshot, doc, updateDoc, deleteDoc, GeoPoint, Timestamp, query, where } from 'firebase/firestore';
-import { Siren, ShieldCheck, MapPin, Users, Activity, Edit, Trash2, XCircle } from 'lucide-react';
+import { collection, onSnapshot, doc, deleteDoc, GeoPoint, Timestamp, query, where } from 'firebase/firestore';
+import { Siren, ShieldCheck, MapPin, Users, Activity, Edit, Trash2, Eye, Clock } from 'lucide-react';
 import UpdateSafeAreaModal from './UpdateSafeAreaModal';
+import UpdateFloodReportModal from './UpdateFloodReportModal';
 
-// Re-using types for consistency
-interface FloodReportDoc {
+export interface FloodReportDoc {
     id: string;
     level: 'Ankle-deep' | 'Knee-deep' | 'Waist-deep';
     location: GeoPoint;
     status: 'active' | 'subsided';
     createdAt: Timestamp;
+    updatedAt?: Timestamp; // Add this line
 }
 
-interface EvacuationCenterDoc {
+export interface EvacuationCenterDoc {
     id: string;
     name: string;
     location: GeoPoint;
@@ -24,113 +25,143 @@ interface EvacuationCenterDoc {
     createdAt: Timestamp;
 }
 
-export default function ListView({ location }: { location: string }) {
+interface ListViewProps {
+    location: string;
+    onViewOnMap: (coords: { lat: number; lng: number }) => void;
+}
+
+export default function ListView({ location, onViewOnMap }: ListViewProps) {
     const [floodReports, setFloodReports] = useState<FloodReportDoc[]>([]);
     const [safeAreas, setSafeAreas] = useState<EvacuationCenterDoc[]>([]);
     const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+    const [isFloodUpdateModalOpen, setIsFloodUpdateModalOpen] = useState(false);
     const [selectedSafeArea, setSelectedSafeArea] = useState<EvacuationCenterDoc | null>(null);
+    const [selectedFloodReport, setSelectedFloodReport] = useState<FloodReportDoc | null>(null);
 
     useEffect(() => {
-        // Listener for active flood reports
         const floodQuery = query(collection(db, 'flood_reports'), where('status', '==', 'active'));
-        const unsubFloods = onSnapshot(floodQuery, (snapshot) => {
+        const unsubscribeFloods = onSnapshot(floodQuery, (snapshot) => {
             const reports = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FloodReportDoc));
             setFloodReports(reports);
         });
 
-        // Listener for evacuation centers
-        const unsubCenters = onSnapshot(collection(db, 'evacuation_centers'), (snapshot) => {
+        const unsubscribeCenters = onSnapshot(collection(db, 'evacuation_centers'), (snapshot) => {
             const centers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EvacuationCenterDoc));
             setSafeAreas(centers);
         });
 
         return () => {
-            unsubFloods();
-            unsubCenters();
+            unsubscribeFloods();
+            unsubscribeCenters();
         };
     }, []);
 
-    const handleMarkAsSubsided = async (id: string) => {
-        if (window.confirm("Are you sure this flood has subsided? This will remove it from the active list and map.")) {
-            const reportRef = doc(db, 'flood_reports', id);
-            await updateDoc(reportRef, { status: 'subsided' });
+    const handleDeleteFloodReport = async (id: string) => {
+        if (window.confirm("Are you sure you want to permanently delete this flood report?")) {
+            await deleteDoc(doc(db, 'flood_reports', id));
         }
     };
 
     const handleDeleteSafeArea = async (id: string) => {
-        if (window.confirm("Are you sure you want to permanently remove this safe area? This cannot be undone.")) {
+        if (window.confirm("Are you sure you want to permanently remove this safe area?")) {
             await deleteDoc(doc(db, 'evacuation_centers', id));
         }
     };
-    
+
     const handleOpenUpdateModal = (safeArea: EvacuationCenterDoc) => {
         setSelectedSafeArea(safeArea);
         setIsUpdateModalOpen(true);
     };
 
-    const formatTime = (timestamp: Timestamp) => {
-        if (!timestamp) return 'N/A';
-        return new Date(timestamp.seconds * 1000).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    const handleOpenFloodUpdateModal = (report: FloodReportDoc) => {
+        setSelectedFloodReport(report);
+        setIsFloodUpdateModalOpen(true);
+    };
+
+    const formatTimeAgo = (timestamp: Timestamp) => {
+        if (!timestamp) return "a moment ago";
+        const seconds = Math.floor((new Date().getTime() - timestamp.toDate().getTime()) / 1000);
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return `${minutes}m ago`;
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return `${hours}h ago`;
+        const days = Math.floor(hours / 24);
+        return `${days}d ago`;
     };
 
     return (
-        <div className="p-4 space-y-6">
+        <div className="p-4 space-y-8">
             <div>
-                <h2 className="text-lg font-bold text-slate-800 mb-3 flex items-center">
-                    <Siren className="mr-2 text-red-500" /> Active Flood Reports
+                <h2 className="text-2xl font-bold text-slate-800 mb-4 flex items-center">
+                    <Siren className="mr-3 text-red-500" size={28}/> Active Flood Reports
                 </h2>
-                <div className="space-y-3">
+                <div className="space-y-4">
                     {floodReports.length > 0 ? floodReports.map(report => (
-                        <div key={report.id} className="bg-white p-3 rounded-lg border border-slate-200">
+                        <div key={report.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-md transition-all hover:shadow-lg">
                             <div className="flex justify-between items-start">
-                                <div>
-                                    <p className="font-bold text-slate-700">{report.level}</p>
-                                    <p className="text-xs text-slate-500 flex items-center mt-1">
-                                        <MapPin size={12} className="mr-1" />
-                                        Lat: {report.location.latitude.toFixed(4)}, Lon: {report.location.longitude.toFixed(4)}
-                                    </p>
+                                <div className="flex-grow">
+                                    <span className={`inline-block px-3 py-1 text-xs font-semibold rounded-full ${
+                                        report.level === 'Ankle-deep' ? 'bg-yellow-100 text-yellow-800' :
+                                        report.level === 'Knee-deep' ? 'bg-orange-100 text-orange-800' :
+                                        'bg-red-100 text-red-800'
+                                    }`}>{report.level}</span>
+                                    <div className="text-xs text-slate-500 flex items-center mt-2">
+                                        <MapPin size={12} className="mr-1.5" />
+                                        <span>Lat: {report.location.latitude.toFixed(4)}, Lon: {report.location.longitude.toFixed(4)}</span>
+                                    </div>
+                                    <div className="text-xs text-slate-400 flex items-center mt-1">
+                                        <Clock size={12} className="mr-1.5" />
+                                        <span>
+                                            {report.updatedAt ? `Updated ${formatTimeAgo(report.updatedAt)}` : `Reported ${formatTimeAgo(report.createdAt)}`}
+                                        </span>
+                                    </div>
                                 </div>
-                                <div className="text-right flex-shrink-0 pl-2">
-                                     <button 
-                                       onClick={() => handleMarkAsSubsided(report.id)}
-                                       className="text-xs bg-red-100 text-red-700 font-semibold py-1 px-2.5 rounded-full hover:bg-red-200 flex items-center"
-                                     >
-                                        <XCircle size={14} className="mr-1.5" /> Mark as Subsided
-                                    </button>
-                                    <p className="text-xs text-slate-400 mt-1">Reported at {formatTime(report.createdAt)}</p>
+                                <div className="flex items-center space-x-2 flex-shrink-0 pl-2">
+                                     <button onClick={() => onViewOnMap({ lat: report.location.latitude, lng: report.location.longitude })} className="text-cyan-600 hover:text-cyan-800 p-2 rounded-full hover:bg-cyan-50 transition-colors">
+                                        <Eye size={18} />
+                                     </button>
+                                     <button onClick={() => handleOpenFloodUpdateModal(report)} className="text-slate-500 hover:text-slate-800 p-2 rounded-full hover:bg-slate-100 transition-colors">
+                                        <Edit size={18} />
+                                     </button>
+                                     <button onClick={() => handleDeleteFloodReport(report.id)} className="text-red-500 hover:text-red-800 p-2 rounded-full hover:bg-red-50 transition-colors">
+                                        <Trash2 size={18} />
+                                     </button>
                                 </div>
                             </div>
                         </div>
-                    )) : <p className="text-sm text-slate-500 p-4 text-center bg-slate-50 rounded-lg">No active flood reports.</p>}
+                    )) : <p className="text-sm text-slate-500 p-6 text-center bg-slate-50 rounded-lg border border-dashed">No active flood reports.</p>}
                 </div>
             </div>
 
             <div>
-                <h2 className="text-lg font-bold text-slate-800 mb-3 flex items-center">
-                    <ShieldCheck className="mr-2 text-green-500" /> Available Safe Areas
+                <h2 className="text-2xl font-bold text-slate-800 mb-4 flex items-center">
+                    <ShieldCheck className="mr-3 text-green-500" size={28}/> Available Safe Areas
                 </h2>
-                <div className="space-y-3">
+                <div className="space-y-4">
                      {safeAreas.length > 0 ? safeAreas.map(area => (
-                        <div key={area.id} className="bg-white p-3 rounded-lg border border-slate-200">
+                        <div key={area.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-md transition-all hover:shadow-lg">
                             <div className="flex justify-between items-start">
-                                <div>
-                                    <p className="font-bold text-slate-700">{area.name}</p>
-                                    <div className="flex items-center space-x-4 mt-1 text-xs text-slate-500">
-                                        <span className="flex items-center"><Activity size={12} className="mr-1" /> Status: <span className="font-medium text-slate-600 ml-1">{area.status}</span></span>
-                                        <span className="flex items-center"><Users size={12} className="mr-1" /> Capacity: <span className="font-medium text-slate-600 ml-1">{area.capacity || 'N/A'}</span></span>
+                                <div className="flex-grow">
+                                    <p className="font-bold text-lg text-slate-800">{area.name}</p>
+                                    <div className="flex items-center space-x-4 mt-2 text-sm text-slate-600">
+                                        <span className="flex items-center"><Activity size={14} className="mr-1.5 text-slate-400" /> Status: <span className="font-semibold ml-1">{area.status}</span></span>
+                                        <span className="flex items-center"><Users size={14} className="mr-1.5 text-slate-400" /> Capacity: <span className="font-semibold ml-1">{area.capacity || 'N/A'}</span></span>
                                     </div>
                                 </div>
                                 <div className="flex items-center space-x-2 flex-shrink-0 pl-2">
-                                     <button onClick={() => handleOpenUpdateModal(area)} className="text-slate-500 hover:text-slate-800 p-1.5 rounded-full hover:bg-slate-100">
-                                        <Edit size={16} />
+                                     <button onClick={() => onViewOnMap({ lat: area.location.latitude, lng: area.location.longitude })} className="text-cyan-600 hover:text-cyan-800 p-2 rounded-full hover:bg-cyan-50 transition-colors">
+                                        <Eye size={18} />
                                      </button>
-                                     <button onClick={() => handleDeleteSafeArea(area.id)} className="text-red-500 hover:text-red-800 p-1.5 rounded-full hover:bg-red-50">
-                                        <Trash2 size={16} />
+                                     <button onClick={() => handleOpenUpdateModal(area)} className="text-slate-500 hover:text-slate-800 p-2 rounded-full hover:bg-slate-100 transition-colors">
+                                        <Edit size={18} />
+                                     </button>
+                                     <button onClick={() => handleDeleteSafeArea(area.id)} className="text-red-500 hover:text-red-800 p-2 rounded-full hover:bg-red-50 transition-colors">
+                                        <Trash2 size={18} />
                                      </button>
                                 </div>
                             </div>
                         </div>
-                    )) : <p className="text-sm text-slate-500 p-4 text-center bg-slate-50 rounded-lg">No safe areas listed.</p>}
+                    )) : <p className="text-sm text-slate-500 p-6 text-center bg-slate-50 rounded-lg border border-dashed">No safe areas listed.</p>}
                 </div>
             </div>
 
@@ -139,6 +170,14 @@ export default function ListView({ location }: { location: string }) {
                     isOpen={isUpdateModalOpen}
                     onClose={() => setIsUpdateModalOpen(false)}
                     safeArea={selectedSafeArea}
+                />
+            )}
+            
+            {selectedFloodReport && (
+                <UpdateFloodReportModal
+                    isOpen={isFloodUpdateModalOpen}
+                    onClose={() => setIsFloodUpdateModalOpen(false)}
+                    report={selectedFloodReport}
                 />
             )}
         </div>
