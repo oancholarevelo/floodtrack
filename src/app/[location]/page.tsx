@@ -1,5 +1,3 @@
-// src/app/[location]/page.tsx
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -65,6 +63,22 @@ export default function Page() {
     setActiveView('list');
   };
 
+  const renderView = () => {
+    switch (activeView) {
+      case 'map':
+        return <MapView location={location} mapCenter={mapCenter} onEditFromMap={handleEditFromMap} />;
+      case 'aid':
+        return <AidView location={location} />;
+      case 'hotlines':
+        return <HotlinesView />;
+      case 'list':
+        return <ListView location={location} onViewOnMap={handleViewOnMap} userLocation={userLocation} />;
+      case 'home':
+      default:
+        return <HomeView location={location} />;
+    }
+  };
+
   const mainContainerClass = activeView === 'map'
     ? 'flex-grow'
     : 'flex-grow overflow-y-auto pb-24';
@@ -94,11 +108,7 @@ export default function Page() {
       </header>
 
       <main className={`${mainContainerClass} bg-slate-50`}>
-        {activeView === 'home' && <HomeView location={location} />}
-        {activeView === 'map' && <MapView location={location} mapCenter={mapCenter} onEditFromMap={handleEditFromMap} />}
-        {activeView === 'aid' && <AidView location={location} />}
-        {activeView === 'hotlines' && <HotlinesView />}
-        {activeView === 'list' && <ListView location={location} onViewOnMap={handleViewOnMap} userLocation={userLocation} />}
+        {renderView()}
       </main>
 
       <footer className="fixed bottom-0 left-0 right-0 z-[2000] bg-transparent">
