@@ -66,7 +66,7 @@ function LocateControl() {
     };
 
     return (
-        <div className="leaflet-top leaflet-right">
+        <div className="leaflet-top leaflet-left">
             <div className="leaflet-control leaflet-bar">
                 <a href="#" title="Locate me" role="button" onClick={(e) => { e.preventDefault(); handleLocate(); }}>
                     <LocateFixed size={18} style={{ margin: '6px' }} />

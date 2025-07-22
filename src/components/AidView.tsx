@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Search, PlusCircle, Clock, MapPin, CheckCircle, Heart, HandHelping } from 'lucide-react';
 import { db } from '../lib/firebase';
 import { collection, onSnapshot, Timestamp, addDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
@@ -28,6 +28,10 @@ export interface AidItemDoc {
     status: AidStatus;
     createdAt: Timestamp;
 }
+
+// Memoize the modal to prevent re-renders that cause the keyboard to dismiss
+const MemoizedPostAidModal = React.memo(PostAidModal);
+const MemoizedAidDetailsModal = React.memo(AidDetailsModal);
 
 export default function AidView({ location }: { location: string }) {
     const [activeTab, setActiveTab] = useState<AidTab>('requests');
@@ -151,7 +155,7 @@ export default function AidView({ location }: { location: string }) {
 
     return (
         <div className="h-full w-full flex flex-col relative">
-            <div className="p-4 bg-white border-b border-slate-100">
+            <div className="p-4 bg-white border-b border-slate-100 sticky top-0 z-10">
                 <div className="flex bg-slate-100 rounded-full p-1 mb-4">
                     <TabButton tab="requests" label="Need Help" icon={<HandHelping size={16} />} />
                     <TabButton tab="offers" label="Offer Help" icon={<Heart size={16} />} />
@@ -191,14 +195,14 @@ export default function AidView({ location }: { location: string }) {
                 </button>
             </div>
 
-            <PostAidModal
+            <MemoizedPostAidModal
                 isOpen={isPostModalOpen}
                 onClose={() => setIsPostModalOpen(false)}
                 onSubmit={handleAidSubmit}
                 location={location}
             />
 
-            <AidDetailsModal
+            <MemoizedAidDetailsModal
                 isOpen={isDetailsModalOpen}
                 onClose={() => setIsDetailsModalOpen(false)}
                 item={selectedAidItem}
