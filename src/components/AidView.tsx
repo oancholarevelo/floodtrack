@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react'; // Import useCallback
-import { Search, PlusCircle, Clock, MapPin, CheckCircle, Heart, HandHelping } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Search, PlusCircle, Clock, MapPin, CheckCircle, Heart, HandHelping, Siren } from 'lucide-react';
 import { db } from '../lib/firebase';
 import { collection, onSnapshot, Timestamp, addDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import PostAidModal from './PostAidModal';
 import AidDetailsModal from './AidDetailsModal';
 
-// (Interfaces remain the same)
+// --- INTERFACES ---
 export type AidTab = 'requests' | 'offers';
 export type OfferType = 'Food/Water' | 'Transport' | 'Shelter' | 'Volunteer' | 'Other';
 export type AidStatus = 'active' | 'helped' | 'help given';
@@ -28,13 +28,14 @@ export interface AidItemDoc {
     offerType?: OfferType;
     status: AidStatus;
     createdAt: Timestamp;
+    isSOS?: boolean; // Added for the SOS feature
 }
 
-
-// Memoize the modal to prevent re-renders
+// --- MEMOIZED COMPONENTS ---
 const MemoizedPostAidModal = React.memo(PostAidModal);
 const MemoizedAidDetailsModal = React.memo(AidDetailsModal);
 
+// --- MAIN COMPONENT ---
 export default function AidView({ location }: { location: string }) {
     const [activeTab, setActiveTab] = useState<AidTab>('requests');
     const [isPostModalOpen, setIsPostModalOpen] = useState(false);
@@ -43,6 +44,7 @@ export default function AidView({ location }: { location: string }) {
     const [aidRequests, setAidRequests] = useState<AidItemDoc[]>([]);
     const [aidOffers, setAidOffers] = useState<AidItemDoc[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
+    const [isSendingSOS, setIsSendingSOS] = useState(false);
 
     useEffect(() => {
         const createListener = (collectionName: string, setter: React.Dispatch<React.SetStateAction<AidItemDoc[]>>) => {
@@ -62,7 +64,67 @@ export default function AidView({ location }: { location: string }) {
         };
     }, []);
 
-    // FIX: Wrap handler functions in useCallback
+    // --- SOS BUTTON HANDLER ---
+    const handleSOSClick = () => {
+        if (!confirm("This will send an EMERGENCY SOS with your current location. Only use this in a life-threatening situation. Are you sure?")) {
+            return;
+        }
+
+        if (!navigator.geolocation) {
+            alert("Geolocation is not supported by your browser. Cannot send SOS.");
+            return;
+        }
+
+        setIsSendingSOS(true);
+        alert("Sending SOS... Getting your location. Please wait and do not close this page.");
+
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const { latitude, longitude } = position.coords;
+                let locationString = `Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}`;
+
+                // Attempt to get a human-readable address
+                const apiKey = process.env.NEXT_PUBLIC_GEOAPIFY_API_KEY;
+                if (apiKey) {
+                    try {
+                        const response = await fetch(`https://api.geoapify.com/v1/geocode/reverse?lat=${latitude}&lon=${longitude}&apiKey=${apiKey}`);
+                        const data = await response.json();
+                        if (data.features?.length > 0) {
+                            locationString = data.features[0].properties.formatted;
+                        }
+                    } catch (error) {
+                        console.error("Reverse geocoding failed, using coordinates as fallback.", error);
+                    }
+                }
+
+                const newPost = {
+                    title: "SOS - Immediate Assistance Needed",
+                    details: "This is an automated SOS alert. User requires immediate help at their location.",
+                    location: locationString,
+                    createdAt: serverTimestamp(),
+                    status: 'active' as AidStatus,
+                    isSOS: true,
+                };
+
+                try {
+                    await addDoc(collection(db, 'aid_requests'), newPost);
+                    alert("SOS signal sent successfully. Your request is now at the top of the list.");
+                } catch (error) {
+                    alert("Failed to send SOS. Please check your internet connection and try again.");
+                } finally {
+                    setIsSendingSOS(false);
+                }
+            },
+            (error) => {
+                setIsSendingSOS(false);
+                console.error(`Geolocation error: ${error.message}`);
+                alert("Could not get your location. Please enable location services in your browser settings and try again.");
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+    };
+
+
     const handleAidSubmit = useCallback(async (postData: AidPostData) => {
         const collectionName = postData.type === 'requests' ? 'aid_requests' : 'aid_offers';
         const { type: _, ...data } = postData;
@@ -70,7 +132,7 @@ export default function AidView({ location }: { location: string }) {
 
         await addDoc(collection(db, collectionName), newPost);
         setIsPostModalOpen(false);
-    }, []); // Empty dependency array ensures the function is created only once
+    }, []);
 
     const handleClosePostModal = useCallback(() => {
         setIsPostModalOpen(false);
@@ -92,11 +154,19 @@ export default function AidView({ location }: { location: string }) {
         return `${days}d ago`;
     };
 
+    // Updated filtering logic to pin SOS posts to the top
     const filteredRequests = useMemo(() =>
-        aidRequests.filter(item =>
-            item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.location.toLowerCase().includes(searchTerm.toLowerCase())
-        ), [aidRequests, searchTerm]);
+        aidRequests
+            .filter(item =>
+                item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                item.location.toLowerCase().includes(searchTerm.toLowerCase())
+            )
+            .sort((a, b) => {
+                if (a.isSOS && !b.isSOS) return -1;
+                if (!a.isSOS && b.isSOS) return 1;
+                return 0;
+            }),
+    [aidRequests, searchTerm]);
 
     const filteredOffers = useMemo(() =>
         aidOffers.filter(item =>
@@ -105,47 +175,56 @@ export default function AidView({ location }: { location: string }) {
             item.offerType?.toLowerCase().includes(searchTerm.toLowerCase())
         ), [aidOffers, searchTerm]);
 
-    const AidCard = (item: AidItemDoc) => (
-        <div
-            className={`bg-white p-4 rounded-xl border transition-all duration-200 ${item.status !== 'active'
-                    ? 'border-slate-100 bg-slate-50 opacity-70'
-                    : 'border-slate-200 hover:border-cyan-400 hover:shadow-lg hover:scale-[1.02]'
-                }`}
-        >
-            <div className="flex justify-between items-start">
-                <h4 className="font-bold text-slate-800 text-lg pr-2">{item.title}</h4>
-                {item.offerType && (
-                    <span className="text-xs font-semibold bg-cyan-100 text-cyan-800 px-2.5 py-1 rounded-full whitespace-nowrap">{item.offerType}</span>
+    // --- RENDER COMPONENTS ---
+    const AidCard = (item: AidItemDoc) => {
+        const isSOS = item.isSOS === true;
+
+        return (
+            <div
+                className={`p-4 rounded-xl border-2 transition-all duration-200 
+                    ${isSOS ? 'border-red-500 bg-red-50' : 'border-slate-200 bg-white'} 
+                    ${item.status !== 'active' ? 'opacity-70' : 'hover:shadow-lg hover:scale-[1.02]'}`}
+            >
+                <div className="flex justify-between items-start">
+                    <h4 className={`font-bold text-lg pr-2 ${isSOS ? 'text-red-800' : 'text-slate-800'}`}>
+                        {isSOS && <Siren size={16} className="inline-block mr-2 mb-1 text-red-600" />}
+                        {item.title}
+                    </h4>
+                    {item.offerType && (
+                        <span className="text-xs font-semibold bg-cyan-100 text-cyan-800 px-2.5 py-1 rounded-full whitespace-nowrap">{item.offerType}</span>
+                    )}
+                </div>
+
+                <div className="flex items-center text-sm text-slate-500 mt-1 space-x-4">
+                    <div className="flex items-center space-x-1.5">
+                        <MapPin size={14} />
+                        <span>{item.location}</span>
+                    </div>
+                    <div className="flex items-center space-x-1.5">
+                        <Clock size={14} />
+                        <span>{formatTimeAgo(item.createdAt)}</span>
+                    </div>
+                </div>
+
+                <p className="text-slate-600 text-sm mt-3 h-10 overflow-hidden line-clamp-2">{item.details}</p>
+
+                {item.status !== 'active' ? (
+                    <div className="mt-4 text-center text-sm font-semibold text-green-600 bg-green-100 py-2 rounded-lg flex items-center justify-center space-x-2">
+                        <CheckCircle size={16} />
+                        <span>{item.status === 'helped' ? 'Request Fulfilled' : 'Help Provided'}</span>
+                    </div>
+                ) : (
+                    <button
+                        onClick={() => handleViewDetails(item)}
+                        className={`mt-4 w-full text-white font-semibold py-2.5 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 
+                            ${isSOS ? 'bg-red-600 hover:bg-red-700 focus:ring-red-500' : 'bg-cyan-600 hover:bg-cyan-700 focus:ring-cyan-500'}`}
+                    >
+                        View Details
+                    </button>
                 )}
             </div>
-
-            <div className="flex items-center text-sm text-slate-500 mt-1 space-x-4">
-                <div className="flex items-center space-x-1.5">
-                    <MapPin size={14} />
-                    <span>{item.location}</span>
-                </div>
-                <div className="flex items-center space-x-1.5">
-                    <Clock size={14} />
-                    <span>{formatTimeAgo(item.createdAt)}</span>
-                </div>
-            </div>
-
-            <p className="text-slate-600 text-sm mt-3 h-10 overflow-hidden line-clamp-2">{item.details}</p>
-
-            {item.status !== 'active' ? (
-                <div className="mt-4 text-center text-sm font-semibold text-green-600 bg-green-100 py-2 rounded-lg flex items-center justify-center space-x-2">
-                    <CheckCircle size={16} />
-                    <span>{item.status === 'helped' ? 'Request Fulfilled' : 'Help Provided'}</span>
-                </div>
-            ) : (
-                <button
-                    onClick={() => handleViewDetails(item)}
-                    className="mt-4 w-full bg-cyan-600 text-white font-semibold py-2.5 rounded-lg hover:bg-cyan-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500">
-                    View Details
-                </button>
-            )}
-        </div>
-    );
+        )
+    };
 
     const TabButton = ({ tab, label, icon }: { tab: AidTab, label: string, icon: React.ReactNode }) => (
         <button
@@ -166,7 +245,6 @@ export default function AidView({ location }: { location: string }) {
                     <TabButton tab="requests" label="Need Help" icon={<HandHelping size={16} />} />
                     <TabButton tab="offers" label="Offer Help" icon={<Heart size={16} />} />
                 </div>
-
                 <div className="relative">
                     <input
                         type="text"
@@ -191,8 +269,16 @@ export default function AidView({ location }: { location: string }) {
                     </div>
                 )}
             </div>
-
-            <div className="fixed bottom-24 right-4 z-[2001]">
+            
+            <div className="fixed bottom-24 right-4 z-[2001] flex flex-col items-end space-y-3">
+                 <button
+                    onClick={handleSOSClick}
+                    disabled={isSendingSOS}
+                    className="bg-red-600 text-white font-bold py-3 px-5 rounded-full shadow-lg hover:bg-red-700 flex items-center space-x-2 transition-all duration-200 hover:scale-105 disabled:bg-red-400 disabled:cursor-not-allowed"
+                >
+                    <Siren size={20} />
+                    <span>{isSendingSOS ? 'Sending...' : 'SOS'}</span>
+                </button>
                 <button
                     onClick={() => setIsPostModalOpen(true)}
                     className="bg-cyan-600 text-white font-bold py-3 px-5 rounded-full shadow-lg hover:bg-cyan-700 flex items-center space-x-2 transition-transform duration-200 hover:scale-105">

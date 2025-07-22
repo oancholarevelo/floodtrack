@@ -8,7 +8,7 @@ import { db } from '../lib/firebase.js';
 import { collection, onSnapshot, addDoc, GeoPoint, Timestamp, serverTimestamp, query, where } from 'firebase/firestore';
 import ReportFloodModal from './ReportFloodModal';
 import AddSafeAreaModal, { SafeAreaData } from './AddSafeAreaModal';
-import { Target, X, Check, ShieldCheck, Siren, ShieldPlus, LocateFixed } from 'lucide-react';
+import { Target, X, Check, ShieldCheck, Siren, ShieldPlus, LocateFixed, MapPin } from 'lucide-react';
 
 // Fix for default marker icon issue
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -32,7 +32,7 @@ interface FloodReportDoc {
 }
 
 interface EvacuationCenterDoc {
-    id:string;
+    id: string;
     name: string;
     location: GeoPoint;
     capacity?: number;
@@ -54,66 +54,123 @@ const evacuationCenterIcon = L.divIcon({
 });
 
 
-// --- UPDATED LocateControl COMPONENT ---
 function LocateControl() {
     const map = useMap();
+    const [locationMarker, setLocationMarker] = useState<L.Marker | null>(null);
+    const [isLocating, setIsLocating] = useState(false);
+
+    const userLocationIcon = L.divIcon({
+        html: `<div class="user-location-pulse"></div>`,
+        className: '',
+        iconSize: [20, 20],
+        iconAnchor: [10, 10],
+    });
 
     useEffect(() => {
-        // This function runs when the location is successfully found
         const onLocationFound = (e: L.LocationEvent) => {
-            // You can optionally add a marker here if you want
-            // L.marker(e.latlng).addTo(map).bindPopup("You are here!").openPopup();
+            if (locationMarker) {
+                map.removeLayer(locationMarker);
+            }
+            const newMarker = L.marker(e.latlng, { icon: userLocationIcon })
+                .addTo(map)
+                .bindPopup("<b>Your Location</b>")
+                .openPopup();
+            
+            setLocationMarker(newMarker);
+            setIsLocating(false);
         };
 
-        // This function runs if location access fails or is denied
         const onLocationError = (e: L.ErrorEvent) => {
+            setIsLocating(false);
             console.error("Location error:", e.message);
-            alert("Location access denied or unavailable. Please check your browser settings and ensure location services are enabled.");
+            alert("Could not find your location. Please ensure location services are enabled in your browser settings.");
         };
 
-        // Set up the event listeners on the map instance
         map.on('locationfound', onLocationFound);
         map.on('locationerror', onLocationError);
 
-        // Clean up the listeners when the component is removed
         return () => {
             map.off('locationfound', onLocationFound);
             map.off('locationerror', onLocationError);
         };
-    }, [map]);
+    }, [map, locationMarker, userLocationIcon]);
 
     const handleLocate = () => {
-        // Now, the button simply tells the map to find the location.
-        // setView: true automatically pans the map to the user's location.
-        map.locate({ setView: true, maxZoom: 16 });
+        if (isLocating) return;
+        setIsLocating(true);
+        map.locate({ setView: true, maxZoom: 16, enableHighAccuracy: true });
     };
 
     return (
-        <div className="leaflet-top leaflet-left">
-            <div className="leaflet-control leaflet-bar">
-                <a href="#" title="Locate me" role="button" onClick={(e) => { e.preventDefault(); handleLocate(); }}>
-                    <LocateFixed size={18} style={{ margin: '6px' }} />
-                </a>
+        <>
+            <style>
+                {`
+                    @keyframes pulse {
+                        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(8, 145, 178, 0.7); }
+                        70% { transform: scale(1); box-shadow: 0 0 0 12px rgba(8, 145, 178, 0); }
+                        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(8, 145, 178, 0); }
+                    }
+                    .user-location-pulse {
+                        width: 20px;
+                        height: 20px;
+                        background-color: #0891b2;
+                        border-radius: 50%;
+                        border: 2px solid white;
+                        box-shadow: 0 0 0 rgba(8, 145, 178, 0.4);
+                        animation: pulse 2s infinite cubic-bezier(0.45, 0, 0.2, 1);
+                    }
+                `}
+            </style>
+            <div className="leaflet-top leaflet-left">
+                <div className="leaflet-control leaflet-bar">
+                    <a href="#" title="Locate me" role="button" onClick={(e) => { e.preventDefault(); handleLocate(); }}>
+                        {isLocating ? (
+                            <svg className="animate-spin" style={{ margin: '6px' }} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                            </svg>
+                        ) : (
+                            <LocateFixed size={18} style={{ margin: '6px' }} />
+                        )}
+                    </a>
+                </div>
             </div>
-        </div>
+        </>
     );
 }
-// --- END OF UPDATED LocateControl COMPONENT ---
 
-
+// --- UPDATED LocationPicker COMPONENT ---
 function LocationPicker({ isPicking, onLocationConfirm, onCancel }: { isPicking: boolean, onLocationConfirm: (latlng: L.LatLng) => void, onCancel: () => void }) {
     const [position, setPosition] = useState<L.LatLng | null>(null);
+    const [isGeolocating, setIsGeolocating] = useState(false);
     const map = useMap();
 
     useEffect(() => {
         if (isPicking) {
-            map.dragging.enable(); map.scrollWheelZoom.enable();
+            map.dragging.enable();
+            map.scrollWheelZoom.enable();
             setPosition(map.getCenter());
             const onMove = () => setPosition(map.getCenter());
             map.on('move', onMove);
             return () => { map.off('move', onMove); };
         }
     }, [isPicking, map]);
+
+    const handleUseMyLocation = () => {
+        setIsGeolocating(true);
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const userLatLng = new L.LatLng(pos.coords.latitude, pos.coords.longitude);
+                onLocationConfirm(userLatLng); // Directly confirm this location
+                setIsGeolocating(false);
+            },
+            (error) => {
+                console.error("Geolocation error:", error);
+                alert("Could not get your location. Please enable location services in your browser settings.");
+                setIsGeolocating(false);
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+    };
 
     if (!isPicking || !position) return null;
 
@@ -126,13 +183,28 @@ function LocationPicker({ isPicking, onLocationConfirm, onCancel }: { isPicking:
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1000] pointer-events-none">
                 <Target size={48} className="text-red-500 drop-shadow-lg" />
             </div>
-            <div className="fixed bottom-28 left-1/2 -translate-x-1/2 z-[2001] flex space-x-4">
-                <button onClick={onCancel} className="bg-white text-slate-700 font-bold p-4 rounded-full shadow-lg hover:bg-slate-100 transition-colors"> <X size={20} /> </button>
-                <button onClick={() => onLocationConfirm(position)} className="bg-cyan-600 text-white font-bold py-4 px-6 rounded-full shadow-lg hover:bg-cyan-700 transition-colors flex items-center space-x-2"> <Check size={20} /> <span>Confirm Location</span> </button>
+            <div className="fixed bottom-28 left-1/2 -translate-x-1/2 z-[2001] flex flex-col sm:flex-row items-center space-y-3 sm:space-y-0 sm:space-x-4">
+                 <button
+                    onClick={handleUseMyLocation}
+                    disabled={isGeolocating}
+                    className="bg-white text-slate-700 font-bold py-4 px-6 rounded-full shadow-lg hover:bg-slate-100 transition-colors flex items-center space-x-2 disabled:bg-slate-200 disabled:cursor-wait"
+                >
+                    {isGeolocating ? (
+                         <svg className="animate-spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
+                    ) : (
+                        <MapPin size={20} />
+                    )}
+                    <span>{isGeolocating ? 'Getting Location...' : 'Use My Location'}</span>
+                </button>
+                <div className="flex space-x-4">
+                    <button onClick={onCancel} className="bg-white text-slate-700 font-bold p-4 rounded-full shadow-lg hover:bg-slate-100 transition-colors"> <X size={20} /> </button>
+                    <button onClick={() => onLocationConfirm(position)} className="bg-cyan-600 text-white font-bold py-4 px-6 rounded-full shadow-lg hover:bg-cyan-700 transition-colors flex items-center space-x-2"> <Check size={20} /> <span>Confirm</span> </button>
+                </div>
             </div>
         </>
     );
 }
+// --- END OF LocationPicker COMPONENT ---
 
 const locationCoordinates: { [key: string]: [number, number] } = {
   'montalban': [14.7739, 121.1390],
@@ -163,7 +235,7 @@ export default function MapView({ location, mapCenter, onEditFromMap }: MapViewP
     const [floodReports, setFloodReports] = useState<FloodReportDoc[]>([]);
     const [evacuationCenters, setEvacuationCenters] = useState<EvacuationCenterDoc[]>([]);
 
-    const initialPosition: L.LatLngExpression = locationCoordinates[location.toLowerCase()] || [14.7739, 121.1390];
+    const initialPosition: L.LatLngExpression = mapCenter ? [mapCenter.lat, mapCenter.lng] : (locationCoordinates[location.toLowerCase()] || [14.7739, 121.1390]);
 
     useEffect(() => {
         const reportsQuery = query(collection(db, 'flood_reports'), where('status', '==', 'active'));
@@ -223,7 +295,7 @@ export default function MapView({ location, mapCenter, onEditFromMap }: MapViewP
 
     return (
         <div className="h-full w-full relative">
-            <MapContainer center={mapCenter || initialPosition} zoom={14} style={{ height: '100%', width: '100%' }} zoomControl={false}>
+            <MapContainer center={initialPosition} zoom={14} style={{ height: '100%', width: '100%' }} zoomControl={false}>
                 <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
                 
                 <MapFocusController center={mapCenter} />
