@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, ComponentType } from 'react';
+import { useParams } from 'next/navigation'; // Import the useParams hook
 import { Home, Map, HeartHandshake, Phone } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
@@ -18,11 +19,13 @@ const HotlinesView = dynamic(() => import('../../components/HotlinesView'));
 
 type View = 'home' | 'map' | 'aid' | 'hotlines';
 
-export default function Page({ params }: { params: { location: string } }) {
+// FIX: Remove params from the function signature
+export default function Page() {
   const [activeView, setActiveView] = useState<View>('home');
   
-  // FIX: Access params directly. This is the correct way for now and removes the crash.
-  const { location } = params;
+  // FIX: Get the params using the useParams hook
+  const params = useParams();
+  const location = (params.location as string) || 'montalban'; // Get location, with a fallback
   
   const formattedLocation = location.charAt(0).toUpperCase() + location.slice(1);
 
