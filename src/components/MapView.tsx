@@ -181,7 +181,7 @@ export default function MapView() {
     };
 
     return (
-        <div className="h-full w-full">
+        <div className="h-full w-full relative">
             <MapContainer center={initialPosition} zoom={14} style={{ height: '100%', width: '100%' }} zoomControl={false}>
                 <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
                 
