@@ -47,11 +47,13 @@ export default function Page() {
 
   return (
     <div className="flex flex-col h-screen relative">
-      <header className="bg-white px-4 py-2 pt-[calc(0.5rem+env(safe-area-inset-top))] z-[2000] sticky top-0 flex items-center justify-center border-b border-slate-100">
-        <div className="text-center flex flex-col items-center">
-          <Image src="/logo.png" alt="Ahon Montalban Logo" width={40} height={40} className="mb-1" priority />
-          <h1 className="text-xl font-bold text-slate-800">Ahon Montalban</h1>
-          <p className="text-sm text-slate-500">Rodriguez, Rizal Flood Response</p>
+      <header className="bg-white px-4 py-2 pt-[calc(0.5rem+env(safe-area-inset-top))] z-[2000] sticky top-0 flex items-center justify-start border-b border-slate-100">
+        <div className="flex items-center space-x-3">
+          <Image src="/logo.png" alt="Ahon Montalban Logo" width={40} height={40} priority />
+          <div>
+            <h1 className="text-xl font-bold text-slate-800">Ahon Montalban</h1>
+            <p className="text-sm text-slate-500">Rodriguez, Rizal Flood Response</p>
+          </div>
         </div>
       </header>
 

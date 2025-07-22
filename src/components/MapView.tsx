@@ -210,7 +210,7 @@ export default function MapView() {
             </MapContainer>
 
             {pickingMode === null && (
-                <div className="absolute bottom-24 right-4 z-[1000] flex flex-col space-y-3">
+                <div className="absolute bottom-24 right-4 z-[2001] flex flex-col space-y-3">
                     <button onClick={() => setPickingMode('safe_area')} className="bg-green-600 text-white font-bold py-3 px-4 rounded-full shadow-lg hover:bg-green-700 transition-transform duration-200 hover:scale-105 flex items-center space-x-2">
                         <ShieldPlus size={20}/>
                         <span>Add Safe Area</span>
