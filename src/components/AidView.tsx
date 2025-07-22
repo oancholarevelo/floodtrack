@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react'; // Import useCallback
 import { Search, PlusCircle, Clock, MapPin, CheckCircle, Heart, HandHelping } from 'lucide-react';
 import { db } from '../lib/firebase';
 import { collection, onSnapshot, Timestamp, addDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import PostAidModal from './PostAidModal';
 import AidDetailsModal from './AidDetailsModal';
 
+// (Interfaces remain the same)
 export type AidTab = 'requests' | 'offers';
 export type OfferType = 'Food/Water' | 'Transport' | 'Shelter' | 'Volunteer' | 'Other';
 export type AidStatus = 'active' | 'helped' | 'help given';
@@ -29,7 +30,8 @@ export interface AidItemDoc {
     createdAt: Timestamp;
 }
 
-// Memoize the modal to prevent re-renders that cause the keyboard to dismiss
+
+// Memoize the modal to prevent re-renders
 const MemoizedPostAidModal = React.memo(PostAidModal);
 const MemoizedAidDetailsModal = React.memo(AidDetailsModal);
 
@@ -60,15 +62,19 @@ export default function AidView({ location }: { location: string }) {
         };
     }, []);
 
-    const handleAidSubmit = async (postData: AidPostData) => {
+    // FIX: Wrap handler functions in useCallback
+    const handleAidSubmit = useCallback(async (postData: AidPostData) => {
         const collectionName = postData.type === 'requests' ? 'aid_requests' : 'aid_offers';
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { type: _, ...data } = postData;
         const newPost = { ...data, createdAt: serverTimestamp(), status: 'active' };
 
         await addDoc(collection(db, collectionName), newPost);
         setIsPostModalOpen(false);
-    };
+    }, []); // Empty dependency array ensures the function is created only once
+
+    const handleClosePostModal = useCallback(() => {
+        setIsPostModalOpen(false);
+    }, []);
 
     const handleViewDetails = (item: AidItemDoc) => {
         setSelectedAidItem(item);
@@ -197,7 +203,7 @@ export default function AidView({ location }: { location: string }) {
 
             <MemoizedPostAidModal
                 isOpen={isPostModalOpen}
-                onClose={() => setIsPostModalOpen(false)}
+                onClose={handleClosePostModal}
                 onSubmit={handleAidSubmit}
                 location={location}
             />

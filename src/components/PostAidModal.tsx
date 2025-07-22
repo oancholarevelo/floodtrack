@@ -13,6 +13,20 @@ interface PostAidModalProps {
     location: string;
 }
 
+// FIX: Define helper components OUTSIDE the main component function
+const FormLabel: React.FC<{htmlFor: string, children: React.ReactNode}> = ({htmlFor, children}) => (
+    <label htmlFor={htmlFor} className="block text-sm font-medium text-slate-700 mb-1">{children}</label>
+);
+
+const InputField: React.FC<React.InputHTMLAttributes<HTMLInputElement>> = (props) => (
+    <input {...props} className="mt-1 w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition" />
+);
+
+const SelectField: React.FC<React.SelectHTMLAttributes<HTMLSelectElement>> = (props) => (
+     <select {...props} className="mt-1 w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition" />
+);
+
+
 export default function PostAidModal({ isOpen, onClose, onSubmit, location }: PostAidModalProps) {
     const [postType, setPostType] = useState<AidTab>('requests');
     const [title, setTitle] = useState('');
@@ -32,7 +46,7 @@ export default function PostAidModal({ isOpen, onClose, onSubmit, location }: Po
             setOfferType('Other');
             setPostType('requests');
         }
-    }, [isOpen]);
+    }, [isOpen, location]); // Added location to dependency array for correctness
 
     if (!isOpen) return null;
 
@@ -57,18 +71,6 @@ export default function PostAidModal({ isOpen, onClose, onSubmit, location }: Po
         }
         onSubmit(postData);
     };
-
-    const FormLabel: React.FC<{htmlFor: string, children: React.ReactNode}> = ({htmlFor, children}) => (
-        <label htmlFor={htmlFor} className="block text-sm font-medium text-slate-700 mb-1">{children}</label>
-    );
-
-    const InputField: React.FC<React.InputHTMLAttributes<HTMLInputElement>> = (props) => (
-        <input {...props} className="mt-1 w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition" />
-    );
-
-    const SelectField: React.FC<React.SelectHTMLAttributes<HTMLSelectElement>> = (props) => (
-         <select {...props} className="mt-1 w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition" />
-    );
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex justify-center items-center z-[3000] p-4">

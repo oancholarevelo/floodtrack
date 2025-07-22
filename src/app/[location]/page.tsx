@@ -1,15 +1,15 @@
-// src/app/[location]/page.tsx
-
 "use client";
 
-import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useParams, useSearchParams } from 'next/navigation';
 import { Home, Map, HeartHandshake, Phone, List } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 
+// Interfaces for props
 interface LocationProps {
   location: string;
+  coordinates?: { lat: number; lon: number };
 }
 
 interface MapViewProps {
@@ -24,32 +24,39 @@ interface ListViewProps {
     userLocation: { lat: number; lng: number } | null;
 }
 
+// Dynamic imports
 const HomeView = dynamic<LocationProps>(() => import('../../components/HomeView'));
 const MapView = dynamic<MapViewProps>(() => import('../../components/MapView'), { ssr: false });
-const AidView = dynamic<LocationProps>(() => import('../../components/AidView'));
+const AidView = dynamic<Omit<LocationProps, 'coordinates'>>(() => import('../../components/AidView'));
 const HotlinesView = dynamic(() => import('../../components/HotlinesView'));
 const ListView = dynamic<ListViewProps>(() => import('../../components/ListView'));
 
 type View = 'home' | 'map' | 'aid' | 'hotlines' | 'list';
 
-export default function Page() {
+function LocationPageContent() {
   const [activeView, setActiveView] = useState<View>('home');
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | undefined>(undefined);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   
   const params = useParams();
-  const location = (params.location as string) || 'montalban';
-  
+  const searchParams = useSearchParams();
+  const location = (params.location as string) || 'default';
+
+  // State for dynamic coordinates from URL
+  const [currentCoordinates, setCurrentCoordinates] = useState<{ lat: number; lon: number } | undefined>();
+
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(position => {
-        setUserLocation({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        });
-      });
+    // Read coordinates from URL search params
+    const lat = searchParams.get('lat');
+    const lng = searchParams.get('lng');
+
+    if (lat && lng) {
+      const parsedLat = parseFloat(lat);
+      const parsedLng = parseFloat(lng);
+      setCurrentCoordinates({ lat: parsedLat, lon: parsedLng });
+      setUserLocation({ lat: parsedLat, lng: parsedLng });
     }
-  }, []);
+  }, [searchParams]);
 
   const formattedLocation = location
     .split(' ')
@@ -94,7 +101,7 @@ export default function Page() {
       </header>
 
       <main className={`${mainContainerClass} bg-slate-50`}>
-        {activeView === 'home' && <HomeView location={location} />}
+        {activeView === 'home' && <HomeView location={location} coordinates={currentCoordinates} />}
         {activeView === 'map' && <MapView location={location} mapCenter={mapCenter} onEditFromMap={handleEditFromMap} />}
         {activeView === 'aid' && <AidView location={location} />}
         {activeView === 'hotlines' && <HotlinesView />}
@@ -113,5 +120,14 @@ export default function Page() {
         </div>
       </footer>
     </div>
+  );
+}
+
+// Wrap the component in Suspense because useSearchParams requires it.
+export default function Page() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LocationPageContent />
+    </Suspense>
   );
 }

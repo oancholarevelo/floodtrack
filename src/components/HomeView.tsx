@@ -15,20 +15,15 @@ interface WeatherData {
 
 interface HomeViewProps {
   location: string;
+  coordinates?: { lat: number; lon: number };
 }
-
-const locationCoordinates: { [key: string]: { lat: number; lon: number } } = {
-  'montalban': { lat: 14.7169, lon: 121.1244 },
-  'sanmateo': { lat: 14.6939, lon: 121.1169 },
-  'marikina': { lat: 14.6331, lon: 121.0993 },
-  'taguig': { lat: 14.5176, lon: 121.0509 },
-  'quezoncity': { lat: 14.6760, lon: 121.0437 }, // Add this line
-};
 
 const lguFacebookPages: { [key: string]: { name: string; url: string } } = {
     'montalban': { name: "Bangon Bagong Montalban", url: "https://www.facebook.com/BangonBagongMontalban" },
     'taguig': { name: "I Love Taguig", url: "https://www.facebook.com/taguigcity" },
-    'quezoncity': { name: "Quezon City Government", url: "https://www.facebook.com/QCGov" }, // Add this line
+    'quezoncity': { name: "Quezon City Government", url: "https://www.facebook.com/QCGov" },
+    'sanmateo': { name: "San Mateo Public Information Office", url: "https://www.facebook.com/SanMateoPIO" },
+    'marikina': { name: "Marikina PIO", url: "https://www.facebook.com/MarikinaPIO" },
     'default': { name: "NDRRMC", url: "https://www.facebook.com/NDRRMC" }
 };
 
@@ -51,20 +46,28 @@ const WeatherInfoChip: React.FC<{icon: React.ReactNode, label: string, value: st
     </div>
 );
 
-export default function HomeView({ location }: HomeViewProps) {
+export default function HomeView({ location, coordinates }: HomeViewProps) {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loadingWeather, setLoadingWeather] = useState(true);
   const [weatherError, setWeatherError] = useState<string | null>(null);
 
   const currentLocation = location.toLowerCase();
-  const coordinates = locationCoordinates[currentLocation] || locationCoordinates['montalban'];
   const isRizalLocation = rizalLocations.includes(currentLocation);
   const lguPage = lguFacebookPages[currentLocation] || lguFacebookPages['default'];
+  
+  // Use a default coordinate for the Windy map if none are provided
+  const displayCoordinates = coordinates || { lat: 14.7169, lon: 121.1244 };
 
   useEffect(() => {
     const fetchWeather = async () => {
+      // Don't fetch weather until coordinates are available
+      if (!coordinates) {
+        setLoadingWeather(true); // Keep showing loading state
+        return;
+      }
+
       setLoadingWeather(true);
-      setWeatherError(null); // Reset error state on new fetch
+      setWeatherError(null);
       const apiKey = process.env.NEXT_PUBLIC_WEATHER_API_KEY;
 
       if (!apiKey || apiKey === "YOUR_API_KEY") {
@@ -74,19 +77,11 @@ export default function HomeView({ location }: HomeViewProps) {
       }
 
       try {
-        // Use coordinates for a more reliable API call
-        const coords = locationCoordinates[location.toLowerCase()];
-        if (!coords) {
-          throw new Error(`Location "${location}" is not configured in locationCoordinates.`);
-        }
-        
-        // Format for the API: latitude,longitude
-        const apiQuery = `${coords.lat},${coords.lon}`;
+        const apiQuery = `${coordinates.lat},${coordinates.lon}`;
 
         const response = await fetch(`https://api.weatherapi.com/v1/current.json?key=${apiKey}&q=${apiQuery}&aqi=no`);
         
         if (!response.ok) {
-          // Log the actual error from the API for better debugging
           const errorData = await response.json();
           console.error("WeatherAPI Error:", errorData.error.message);
           throw new Error('Failed to fetch weather data from the API.');
@@ -95,7 +90,6 @@ export default function HomeView({ location }: HomeViewProps) {
         const data = await response.json();
         setWeather(data.current);
       } catch (error) {
-        // Set a more descriptive error message
         setWeatherError(error instanceof Error ? error.message : "An unknown error occurred.");
         console.error(error);
       } finally {
@@ -104,7 +98,7 @@ export default function HomeView({ location }: HomeViewProps) {
     };
 
     fetchWeather();
-  }, [location]);
+  }, [coordinates]); // Re-run the effect when coordinates change
   
   const currentTime = new Date().toLocaleString('en-US', {
     hour: 'numeric',
@@ -157,7 +151,7 @@ export default function HomeView({ location }: HomeViewProps) {
             <iframe
                 width="100%"
                 height="100%"
-                src={`https://embed.windy.com/embed2.html?lat=${coordinates.lat}&lon=${coordinates.lon}&detailLat=${coordinates.lat}&detailLon=${coordinates.lon}&width=650&height=450&zoom=10&level=surface&overlay=rain&product=ecmwf&menu=&message=true&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=kph&metricTemp=%C2%B0C&radarRange=-1`}
+                src={`https://embed.windy.com/embed2.html?lat=${displayCoordinates.lat}&lon=${displayCoordinates.lon}&detailLat=${displayCoordinates.lat}&detailLon=${displayCoordinates.lon}&width=650&height=450&zoom=10&level=surface&overlay=rain&product=ecmwf&menu=&message=true&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=kph&metricTemp=%C2%B0C&radarRange=-1`}
                 frameBorder="0"
             ></iframe>
         </div>
@@ -181,7 +175,6 @@ export default function HomeView({ location }: HomeViewProps) {
           className="mt-4 w-full bg-cyan-600 text-white font-semibold py-2.5 rounded-lg hover:bg-cyan-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 flex items-center justify-center space-x-2"
         >
           <ExternalLink size={16} />
-          {/* FIX: Use shorter, responsive text for the button */}
           <span className="sm:hidden">View on Facebook</span>
           <span className="hidden sm:inline">View More on Facebook</span>
         </a>

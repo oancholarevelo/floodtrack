@@ -30,13 +30,10 @@ export default function LandingPage() {
 
                     if (data.features.length > 0) {
                         const properties = data.features[0].properties;
-                        const locationName = (properties.municipality || properties.city || '').toLowerCase();
-
-                        if (locationName) {
-                            router.push(`/${encodeURIComponent(locationName)}`); // Corrected line
-                        } else {
-                            router.push('/montalban');
-                        }
+                        const locationName = (properties.municipality || properties.city || 'location').toLowerCase();
+                        
+                        // Pass coordinates as query parameters
+                        router.push(`/${encodeURIComponent(locationName)}?lat=${latitude}&lng=${longitude}`);
                     } else {
                         router.push('/montalban');
                     }
