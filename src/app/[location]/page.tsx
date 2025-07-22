@@ -59,10 +59,12 @@ export default function Page() {
   const NavItem = ({ view, icon: Icon, label }: { view: View, icon: React.ElementType, label: string }) => (
     <button
       onClick={() => setActiveView(view)}
-      className={`flex flex-col items-center justify-center w-full h-16 transition-colors duration-300 ${activeView === view ? 'text-cyan-600' : 'text-slate-500 hover:text-cyan-500'}`}
+      aria-label={label}
+      className={`flex-1 flex flex-col items-center justify-center h-full py-2 transition-all duration-300 group relative ${
+        activeView === view ? 'text-cyan-600' : 'text-slate-500 hover:text-cyan-600'
+      }`}
     >
-      <Icon size={24} className={activeView === view ? 'scale-110' : ''} />
-      <span className="text-xs mt-1 font-semibold">{label}</span>
+      <Icon size={28} className="transition-transform duration-300 group-hover:scale-110" />
     </button>
   );
 
@@ -82,14 +84,16 @@ export default function Page() {
         {renderView()}
       </main>
 
-      <footer className="fixed bottom-0 left-0 right-0 max-w-5xl mx-auto px-2 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] z-[2000] bg-transparent">
-        <nav className="flex justify-around bg-white/70 backdrop-blur-lg rounded-full shadow-lg border border-slate-100">
-          <NavItem view="home" icon={Home} label="Home" />
-          <NavItem view="map" icon={Map} label="Flood Map" />
-          <NavItem view="list" icon={List} label="List View" />
-          <NavItem view="aid" icon={HeartHandshake} label="Community Aid" />
-          <NavItem view="hotlines" icon={Phone} label="Hotlines" />
-        </nav>
+      <footer className="fixed bottom-0 left-0 right-0 z-[2000] bg-transparent">
+        <div className="max-w-md mx-auto p-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
+          <nav className="flex justify-around bg-white/80 backdrop-blur-lg rounded-2xl shadow-t-lg border border-slate-100 overflow-hidden h-16">
+            <NavItem view="home" icon={Home} label="Home" />
+            <NavItem view="map" icon={Map} label="Flood Map" />
+            <NavItem view="list" icon={List} label="List View" />
+            <NavItem view="aid" icon={HeartHandshake} label="Community Aid" />
+            <NavItem view="hotlines" icon={Phone} label="Hotlines" />
+          </nav>
+        </div>
       </footer>
     </div>
   );
