@@ -107,7 +107,7 @@ function LocationPicker({ isPicking, onLocationConfirm, onCancel }: { isPicking:
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1000] pointer-events-none">
                 <Target size={48} className="text-red-500 drop-shadow-lg" />
             </div>
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] flex space-x-4">
+            <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-[2001] flex space-x-4">
                 <button onClick={onCancel} className="bg-white text-slate-700 font-bold p-4 rounded-full shadow-lg hover:bg-slate-100 transition-colors"> <X size={20} /> </button>
                 <button onClick={() => onLocationConfirm(position)} className="bg-cyan-600 text-white font-bold py-4 px-6 rounded-full shadow-lg hover:bg-cyan-700 transition-colors flex items-center space-x-2"> <Check size={20} /> <span>Confirm Location</span> </button>
             </div>
