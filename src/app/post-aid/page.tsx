@@ -4,11 +4,23 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { AidPostData, AidTab, OfferType } from '../../components/AidView';
+// Removed unused AidPostData from this import
+import { AidTab, OfferType } from '../../components/AidView'; 
 import { db } from '../../lib/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, GeoPoint, Timestamp } from 'firebase/firestore';
 import { ArrowLeft } from 'lucide-react';
 import Image from 'next/image';
+
+// Type for our new post object to satisfy TypeScript rules
+interface NewPost {
+    title: string;
+    location: string;
+    details: string;
+    createdAt: any; // Accepts FieldValue from serverTimestamp()
+    status: string;
+    offerType?: OfferType;
+    coordinates?: GeoPoint;
+}
 
 // Helper Components defined outside
 const FormLabel: React.FC<{htmlFor: string, children: React.ReactNode}> = ({htmlFor, children}) => (
@@ -64,8 +76,8 @@ function PostAidForm() {
         
         const fullLocation = `${addressDetails}, Brgy. ${barangay}, ${city}`;
         const collectionName = postType === 'requests' ? 'aid_requests' : 'aid_offers';
-
-        const postData: any = {
+        
+        const postData: Partial<NewPost> = { // Use the new type here
             title,
             location: fullLocation,
             details,

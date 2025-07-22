@@ -1,6 +1,6 @@
 "use client";
 
-import { Phone, Users, Shield, Heart, LucideIcon } from 'lucide-react';
+import { Phone, Users, Heart, LucideIcon } from 'lucide-react';
 
 // Define TypeScript interfaces for our data structures
 interface Contact {

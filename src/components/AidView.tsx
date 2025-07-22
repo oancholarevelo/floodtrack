@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react'; // Removed unused useCallback
 import Link from 'next/link';
 import { Search, PlusCircle, Clock, MapPin, CheckCircle, Heart, HandHelping, Siren, Navigation } from 'lucide-react';
 import { db } from '../lib/firebase';
@@ -96,6 +96,7 @@ export default function AidView({ location }: { location: string }) {
                     await addDoc(collection(db, 'aid_requests'), newPost);
                     alert("SOS signal sent successfully. Your request is now at the top of the list.");
                 } catch (error) {
+                    console.error("Firebase post error:", error); // Use the error variable
                     alert("Failed to send SOS. Please try again.");
                 } finally {
                     setIsSendingSOS(false);
@@ -103,6 +104,7 @@ export default function AidView({ location }: { location: string }) {
             },
             (error) => {
                 setIsSendingSOS(false);
+                console.error("Geolocation error:", error); // Use the error variable
                 alert("Could not get your location. Please enable location services and try again.");
             },
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
