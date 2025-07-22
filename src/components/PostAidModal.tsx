@@ -32,7 +32,7 @@ export default function PostAidModal({ isOpen, onClose, onSubmit, location }: Po
             setOfferType('Other');
             setPostType('requests');
         }
-    }, [isOpen, location]);
+    }, [isOpen]);
 
     if (!isOpen) return null;
 
@@ -72,78 +72,70 @@ export default function PostAidModal({ isOpen, onClose, onSubmit, location }: Po
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex justify-center items-center z-[3000] p-4">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md flex flex-col max-h-[90vh] relative">
+            <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md relative">
+                <button onClick={onClose} className="absolute top-3 right-3 text-slate-400 hover:text-slate-600">
+                    <X size={24} />
+                </button>
+                <h2 className="text-2xl font-bold mb-4 text-slate-800">Create a Community Post</h2>
                 
-                <div className="p-6 pb-4 border-b border-slate-200 flex-shrink-0">
-                    <h2 className="text-2xl font-bold text-slate-800">Create a Community Post</h2>
-                     <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
-                        <X size={24} />
-                    </button>
-                </div>
-                
-                <form onSubmit={handleSubmit} className="flex flex-col flex-grow overflow-hidden">
-                    <div className="overflow-y-auto p-6 space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <FormLabel htmlFor="post-type">I want to...</FormLabel>
+                        <SelectField id="post-type" value={postType} onChange={(e) => setPostType(e.target.value as AidTab)}>
+                            <option value="requests">Request Help</option>
+                            <option value="offers">Offer Help</option>
+                        </SelectField>
+                    </div>
+
+                    {postType === 'offers' && (
                         <div>
-                            <FormLabel htmlFor="post-type">I want to...</FormLabel>
-                            <SelectField id="post-type" value={postType} onChange={(e) => setPostType(e.target.value as AidTab)}>
-                                <option value="requests">Request Help</option>
-                                <option value="offers">Offer Help</option>
+                            <FormLabel htmlFor="offer-type">Type of Aid</FormLabel>
+                            <SelectField id="offer-type" value={offerType} onChange={(e) => setOfferType(e.target.value as OfferType)}>
+                                <option>Food/Water</option>
+                                <option>Transport</option>
+                                <option>Shelter</option>
+                                <option>Volunteer</option>
+                                <option>Other</option>
                             </SelectField>
                         </div>
+                    )}
 
-                        {postType === 'offers' && (
-                            <div>
-                                <FormLabel htmlFor="offer-type">Type of Aid</FormLabel>
-                                <SelectField id="offer-type" value={offerType} onChange={(e) => setOfferType(e.target.value as OfferType)}>
-                                    <option>Food/Water</option>
-                                    <option>Transport</option>
-                                    <option>Shelter</option>
-                                    <option>Volunteer</option>
-                                    <option>Other</option>
-                                </SelectField>
-                            </div>
-                        )}
-
-                        <div>
-                            <FormLabel htmlFor="title">Title / Headline</FormLabel>
-                            <InputField type="text" id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Need Drinking Water for 2" required />
-                        </div>
-                        
-                        <div>
-                            <FormLabel htmlFor="city">City / Municipality</FormLabel>
-                            <InputField type="text" id="city" value={city} onChange={(e) => setCity(e.target.value)} placeholder="e.g., Quezon City" required />
-                        </div>
-                        
-                        <div>
-                            <FormLabel htmlFor="barangay">Barangay</FormLabel>
-                            <InputField type="text" id="barangay" value={barangay} onChange={(e) => setBarangay(e.target.value)} placeholder="e.g., Batasan Hills" required />
-                        </div>
-
-                        <div>
-                            <FormLabel htmlFor="address-details">Street Address / Landmark</FormLabel>
-                            <InputField type="text" id="address-details" value={addressDetails} onChange={(e) => setAddressDetails(e.target.value)} placeholder="e.g., 123 Constitution St., near the school" required />
-                        </div>
-
-                        <div>
-                            <FormLabel htmlFor="details">Details & Contact Info</FormLabel>
-                            <textarea
-                                id="details" value={details} onChange={(e) => setDetails(e.target.value)}
-                                placeholder="Please describe your situation and provide a contact number or instructions."
-                                className="mt-1 w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition"
-                                rows={4} required
-                            />
-                        </div>
+                    <div>
+                        <FormLabel htmlFor="title">Title / Headline</FormLabel>
+                        <InputField type="text" id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Need Drinking Water for 2" required />
                     </div>
                     
-                    <div className="p-6 pt-4 border-t border-slate-200 flex-shrink-0">
-                        <div className="flex justify-end space-x-3">
-                            <button type="button" onClick={onClose} className="px-5 py-2.5 bg-slate-100 text-slate-800 rounded-lg hover:bg-slate-200 font-semibold transition">
-                                Cancel
-                            </button>
-                            <button type="submit" className="px-5 py-2.5 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 font-semibold transition shadow-sm hover:shadow-md">
-                                Submit Post
-                            </button>
-                        </div>
+                    <div>
+                        <FormLabel htmlFor="city">City / Municipality</FormLabel>
+                        <InputField type="text" id="city" value={city} onChange={(e) => setCity(e.target.value)} placeholder="e.g., Quezon City" required />
+                    </div>
+                    
+                    <div>
+                        <FormLabel htmlFor="barangay">Barangay</FormLabel>
+                        <InputField type="text" id="barangay" value={barangay} onChange={(e) => setBarangay(e.target.value)} placeholder="e.g., Batasan Hills" required />
+                    </div>
+
+                    <div>
+                        <FormLabel htmlFor="address-details">Street Address / Landmark</FormLabel>
+                        <InputField type="text" id="address-details" value={addressDetails} onChange={(e) => setAddressDetails(e.target.value)} placeholder="e.g., 123 Constitution St., near the school" required />
+                    </div>
+
+                    <div>
+                        <FormLabel htmlFor="details">Details & Contact Info</FormLabel>
+                        <textarea
+                            id="details" value={details} onChange={(e) => setDetails(e.target.value)}
+                            placeholder="Please describe your situation and provide a contact number or instructions."
+                            className="mt-1 w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition"
+                            rows={4} required
+                        />
+                    </div>
+                    <div className="flex justify-end space-x-3 pt-4">
+                        <button type="button" onClick={onClose} className="px-5 py-2.5 bg-slate-100 text-slate-800 rounded-lg hover:bg-slate-200 font-semibold transition">
+                            Cancel
+                        </button>
+                        <button type="submit" className="px-5 py-2.5 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 font-semibold transition shadow-sm hover:shadow-md">
+                            Submit Post
+                        </button>
                     </div>
                 </form>
             </div>
