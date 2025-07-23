@@ -163,7 +163,7 @@ export default function ListView({ location, onViewOnMap, userLocation }: ListVi
     );
 
     return (
-        <div className="h-full w-full flex flex-col relative">
+        <div className="flex flex-col relative">
             <div className="p-4 bg-white border-b border-slate-100 sticky top-0 z-10">
                 <div className="flex bg-slate-100 rounded-full p-1 mb-4">
                     <TabButton tab="reports" label="Flood Reports" icon={<Siren size={16} />} />
@@ -171,7 +171,7 @@ export default function ListView({ location, onViewOnMap, userLocation }: ListVi
                 </div>
             </div>
 
-            <div className="flex-grow p-4 pb-24">
+            <div className="flex-grow p-4">
                 {activeTab === 'reports' && (
                     <div className="space-y-4">
                         {floodReports.length > 0 ? floodReports.map(report => (
