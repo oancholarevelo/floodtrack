@@ -73,8 +73,8 @@ function LocationPageContent() {
   };
 
   const mainContainerClass = activeView === 'map'
-    ? 'flex-grow'
-    : 'flex-grow overflow-y-auto pb-24';
+    ? 'flex-grow h-0'
+    : 'flex-grow overflow-y-auto pb-24 scroll-smooth';
 
   const NavItem = ({ view, icon: Icon, label }: { view: View, icon: React.ElementType, label: string }) => (
     <button
@@ -89,7 +89,7 @@ function LocationPageContent() {
   );
 
   return (
-    <div className="flex flex-col h-screen relative">
+    <div className="flex flex-col min-h-screen relative">
       <header className="bg-white px-4 py-2 pt-[calc(0.5rem+env(safe-area-inset-top))] z-[2000] sticky top-0 flex items-center justify-start border-b border-slate-100">
         <div className="flex items-center space-x-3">
           <Image src="/logo.png" alt="FloodTrack Logo" width={40} height={40} priority />
