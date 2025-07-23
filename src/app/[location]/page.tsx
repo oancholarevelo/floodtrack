@@ -74,7 +74,7 @@ function LocationPageContent() {
 
   const mainContainerClass = activeView === 'map'
     ? 'flex-grow'
-    : 'flex-grow overflow-y-auto';
+    : 'flex-grow overflow-y-auto pb-24';
 
   const NavItem = ({ view, icon: Icon, label }: { view: View, icon: React.ElementType, label: string }) => (
     <button
@@ -108,9 +108,9 @@ function LocationPageContent() {
         {activeView === 'list' && <ListView location={location} onViewOnMap={handleViewOnMap} userLocation={userLocation} />}
       </main>
 
-      <footer className="sticky bottom-0 left-0 right-0 z-[2000] bg-white border-t border-slate-100">
-        <div className="max-w-md mx-auto">
-          <nav className="flex justify-around h-16 items-center">
+      <footer className="fixed bottom-0 left-0 right-0 z-[2000] bg-transparent">
+        <div className="max-w-md mx-auto p-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
+          <nav className="flex justify-around bg-white/80 backdrop-blur-lg rounded-2xl shadow-t-lg border border-slate-100 overflow-hidden h-16">
             <NavItem view="home" icon={Home} label="Home" />
             <NavItem view="map" icon={Map} label="Flood Map" />
             <NavItem view="list" icon={List} label="List View" />
