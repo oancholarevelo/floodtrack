@@ -72,9 +72,7 @@ function LocationPageContent() {
     setActiveView('list');
   };
 
-  const mainContainerClass = activeView === 'map'
-    ? 'flex-grow'
-    : 'flex-grow overflow-y-auto pb-24';
+  const mainContainerClass = 'flex-grow bg-slate-50';
 
   const NavItem = ({ view, icon: Icon, label }: { view: View, icon: React.ElementType, label: string }) => (
     <button
@@ -100,7 +98,7 @@ function LocationPageContent() {
         </div>
       </header>
 
-      <main className={`${mainContainerClass} bg-slate-50`}>
+      <main className={mainContainerClass}>
         {activeView === 'home' && <HomeView location={location} coordinates={currentCoordinates} />}
         {activeView === 'map' && <MapView location={location} mapCenter={mapCenter} onEditFromMap={handleEditFromMap} />}
         {activeView === 'aid' && <AidView location={location} />}

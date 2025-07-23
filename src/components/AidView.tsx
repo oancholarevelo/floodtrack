@@ -283,16 +283,16 @@ export default function AidView({ location }: { location: string }) {
     const currentList = activeTab === 'requests' ? filteredRequests : filteredOffers;
 
     return (
-        <div className="h-full w-full flex flex-col relative overflow-y-auto">
+        <div className="h-full w-full flex flex-col relative">
             <div className="p-4 bg-white border-b border-slate-100 sticky top-0 z-10">
-                <div className="flex bg-slate-100 rounded-full p-1"><TabButton tab="requests" label="Need Help" icon={<HandHelping size={16} />} /><TabButton tab="offers" label="Offer Help" icon={<Heart size={16} />} /></div>
-                <div className="relative mt-4">
+                <div className="flex bg-slate-100 rounded-full p-1 mb-4"><TabButton tab="requests" label="Need Help" icon={<HandHelping size={16} />} /><TabButton tab="offers" label="Offer Help" icon={<Heart size={16} />} /></div>
+                <div className="relative">
                     <input type="text" placeholder={`Search in ${activeTab}...`} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-full focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-shadow" />
                     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
                 </div>
             </div>
 
-            <div className="flex-grow p-4 pb-24">
+            <div className="flex-grow overflow-y-auto p-4 pb-24">
                 {currentList.length > 0 ? (
                     <div className="space-y-4">{currentList.map(item => <AidCard key={item.id} {...item} />)}</div>
                 ) : (
