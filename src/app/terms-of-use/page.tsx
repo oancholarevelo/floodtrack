@@ -24,7 +24,7 @@ export default function TermsOfUsePage() {
                 <li>Use the app responsibly and do not post false information.</li>
                 <li>Information is crowdsourced and not guaranteed to be 100% accurate.</li>
                 <li>Always prioritize official government advisories.</li>
-                <li>The app is provided "as is," and we are not liable for any damages from its use.</li>
+                <li>The app is provided &quot;as is,&quot; and we are not liable for any damages from its use.</li>
             </ul>
         </div>
 
@@ -34,7 +34,7 @@ export default function TermsOfUsePage() {
         </Section>
 
         <Section icon={AlertTriangle} title="Disclaimer of Warranties">
-            <p>Information on FloodTrack is crowdsourced and provided "as is" without guarantees of accuracy. It is a supplementary tool and should not replace official emergency services.</p>
+            <p>Information on FloodTrack is crowdsourced and provided &quot;as is&quot; without guarantees of accuracy. It is a supplementary tool and should not replace official emergency services.</p>
             <p>Always verify critical information with official sources like PAGASA and NDRRMC before taking action.</p>
         </Section>
 

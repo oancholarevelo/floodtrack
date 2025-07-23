@@ -1,6 +1,6 @@
 "use client";
 
-import { Phone, Users, Heart, LucideIcon, ShieldAlert, Siren, Waves, CloudRain, Ambulance, Building, MapPin } from 'lucide-react';
+import { Phone, Heart, LucideIcon, ShieldAlert, Siren, CloudRain, Building, MapPin } from 'lucide-react';
 
 // Define TypeScript interfaces for our data structures
 interface Contact {
@@ -164,7 +164,7 @@ export default function HotlinesView() {
       
       <div className="bg-slate-50 border-l-4 border-slate-500 text-slate-800 p-4 rounded-r-lg mt-8 mb-2">
           <h3 className="font-bold">Local Area Hotlines</h3>
-          <p className="text-sm">Contacts for specific provinces and cities. For other local concerns, please check your LGU's official announcements.</p>
+          <p className="text-sm">Contacts for specific provinces and cities. For other local concerns, please check your LGU&apos;s official announcements.</p>
       </div>
       {Object.values(localHotlineData).map(data => <HotlineCard key={data.title} {...data} />)}
     </div>
