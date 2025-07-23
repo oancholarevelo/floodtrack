@@ -171,7 +171,7 @@ export default function ListView({ location, onViewOnMap, userLocation }: ListVi
                 </div>
             </div>
 
-            <div className="flex-grow overflow-y-auto p-4">
+            <div className="flex-grow p-4 pb-24">
                 {activeTab === 'reports' && (
                     <div className="space-y-4">
                         {floodReports.length > 0 ? floodReports.map(report => (
