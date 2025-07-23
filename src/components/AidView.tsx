@@ -70,7 +70,6 @@ export default function AidView({ location }: { location: string }) {
 
         const createListener = (collectionName: string, setter: React.Dispatch<React.SetStateAction<AidItemDoc[]>>) => {
             cleanupOldPosts(collectionName);
-            // FIX: This query now excludes items pending deletion from the view
             const q = query(collection(db, collectionName), where('status', '!=', 'pending_deletion'), orderBy('status'), orderBy('createdAt', 'desc'));
             return onSnapshot(q, (snapshot) => {
                 const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AidItemDoc));
@@ -283,7 +282,7 @@ export default function AidView({ location }: { location: string }) {
     const currentList = activeTab === 'requests' ? filteredRequests : filteredOffers;
 
     return (
-        <div className="h-full w-full flex flex-col relative overflow-y-auto">
+        <div className="h-full w-full flex flex-col relative">
             <div className="p-4 bg-white border-b border-slate-100 sticky top-0 z-10">
                 <div className="flex bg-slate-100 rounded-full p-1 mb-4"><TabButton tab="requests" label="Need Help" icon={<HandHelping size={16} />} /><TabButton tab="offers" label="Offer Help" icon={<Heart size={16} />} /></div>
                 <div className="relative">

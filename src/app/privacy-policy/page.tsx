@@ -13,7 +13,7 @@ const Section = ({ icon: Icon, title, children }: { icon: React.ElementType, tit
 
 export default function PrivacyPolicyPage() {
   return (
-    <div className="flex flex-col h-screen bg-white">
+    <div className="flex flex-col bg-white">
       <LegalPageHeader title="Privacy Policy" />
       <main className="flex-grow overflow-y-auto p-6 md:p-8">
         <p className="text-sm text-slate-500 mb-6">Last Updated: July 23, 2025</p>
