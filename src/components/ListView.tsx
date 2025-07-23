@@ -92,6 +92,7 @@ export default function ListView({ location, onViewOnMap, userLocation }: ListVi
             const floodQuery = query(collection(db, 'flood_reports'), where('status', 'in', ['active', 'pending_deletion']));
             const unsubscribeFloods = onSnapshot(floodQuery, (snapshot) => {
                 const reports = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), distance: getDistance(center.lat, center.lng, doc.data().location.latitude, doc.data().location.longitude) } as FloodReportDoc));
+                // FIX: Handle potentially undefined distances when sorting
                 reports.sort((a, b) => (a.distance ?? 0) - (b.distance ?? 0));
                 setFloodReports(reports);
             });
@@ -99,6 +100,7 @@ export default function ListView({ location, onViewOnMap, userLocation }: ListVi
             const safeAreasQuery = query(collection(db, 'evacuation_centers'));
             const unsubscribeCenters = onSnapshot(safeAreasQuery, (snapshot) => {
                 const centers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), distance: getDistance(center.lat, center.lng, doc.data().location.latitude, doc.data().location.longitude) } as EvacuationCenterDoc));
+                // FIX: Handle potentially undefined distances when sorting
                 centers.sort((a, b) => (a.distance ?? 0) - (b.distance ?? 0));
                 setSafeAreas(centers);
             });
@@ -121,6 +123,7 @@ export default function ListView({ location, onViewOnMap, userLocation }: ListVi
         }
     };
     
+    // FIX: Ensure these handlers are defined within the component
     const handleOpenUpdateModal = (safeArea: EvacuationCenterDoc) => {
         setSelectedSafeArea(safeArea);
         setIsUpdateModalOpen(true);
@@ -168,7 +171,7 @@ export default function ListView({ location, onViewOnMap, userLocation }: ListVi
                 </div>
             </div>
 
-            <div className="flex-grow p-4 pb-24">
+            <div className="flex-grow overflow-y-auto p-4">
                 {activeTab === 'reports' && (
                     <div className="space-y-4">
                         {floodReports.length > 0 ? floodReports.map(report => (
