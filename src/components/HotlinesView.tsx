@@ -1,5 +1,3 @@
-// src/components/HotlinesView.tsx
-
 "use client";
 
 import { Phone, Heart, LucideIcon, ShieldAlert, Siren, CloudRain, Building, MapPin } from 'lucide-react';
@@ -157,7 +155,7 @@ const HotlineCard: React.FC<HotlineCategory> = ({ title, icon: Icon, contacts, n
 
 export default function HotlinesView() {
   return (
-    <div className="p-4 space-y-4 pb-24">
+    <div className="p-4 space-y-4">
       <div className="bg-cyan-50 border-l-4 border-cyan-500 text-cyan-800 p-4 rounded-r-lg mb-2">
           <h3 className="font-bold">National Emergency Contacts</h3>
           <p className="text-sm">For nationwide emergencies and public services.</p>
