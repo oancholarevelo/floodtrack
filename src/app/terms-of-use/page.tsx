@@ -15,7 +15,8 @@ export default function TermsOfUsePage() {
   return (
     <div className="flex flex-col h-screen bg-white">
       <LegalPageHeader title="Terms of Use" />
-      <main className="flex-grow overflow-y-auto p-6 md:p-8">
+      <main className="flex-1 overflow-y-auto mobile-scroll-container">
+        <div className="p-6 md:p-8 pb-8">
         <p className="text-sm text-slate-500 mb-6">Last Updated: July 23, 2025</p>
         
         <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
@@ -41,6 +42,7 @@ export default function TermsOfUsePage() {
         <Section icon={ShieldOff} title="Limitation of Liability">
             <p>Your use of any information on this website is entirely at your own risk. In no event shall FloodTrack or its creators be liable for any damages arising from the use or inability to use the service.</p>
         </Section>
+        </div>
       </main>
     </div>
   );
