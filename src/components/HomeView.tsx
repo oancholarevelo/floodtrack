@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Wind, Droplets, AlertTriangle, ExternalLink } from 'lucide-react';
+import { Wind, Droplets, AlertTriangle, ExternalLink, Shield, FileText, ChevronRight, Info, HelpCircle } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 
 interface WeatherData {
     condition: { text: string; icon: string; code: number };
@@ -178,6 +179,50 @@ export default function HomeView({ location, coordinates }: HomeViewProps) {
           <span className="sm:hidden">View on Facebook</span>
           <span className="hidden sm:inline">View More on Facebook</span>
         </a>
+      </Card>
+      <Card title="About & Legal">
+        <div className="space-y-2">
+          <Link 
+            href="/about" 
+            className="flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors group"
+          >
+            <div className="flex items-center space-x-3">
+              <Info size={20} className="text-slate-500" />
+              <span className="font-semibold text-slate-700">About FloodTrack</span>
+            </div>
+            <ChevronRight size={20} className="text-slate-400 group-hover:text-slate-600" />
+          </Link>
+          <Link 
+            href="/how-to-use" 
+            className="flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors group"
+          >
+            <div className="flex items-center space-x-3">
+              <HelpCircle size={20} className="text-slate-500" />
+              <span className="font-semibold text-slate-700">How to Use</span>
+            </div>
+            <ChevronRight size={20} className="text-slate-400 group-hover:text-slate-600" />
+          </Link>
+          <Link 
+            href="/privacy-policy" 
+            className="flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors group"
+          >
+            <div className="flex items-center space-x-3">
+              <Shield size={20} className="text-slate-500" />
+              <span className="font-semibold text-slate-700">Privacy Policy</span>
+            </div>
+            <ChevronRight size={20} className="text-slate-400 group-hover:text-slate-600" />
+          </Link>
+          <Link 
+            href="/terms-of-use" 
+            className="flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors group"
+          >
+            <div className="flex items-center space-x-3">
+              <FileText size={20} className="text-slate-500" />
+              <span className="font-semibold text-slate-700">Terms of Use</span>
+            </div>
+            <ChevronRight size={20} className="text-slate-400 group-hover:text-slate-600" />
+          </Link>
+        </div>
       </Card>
     </div>
   );
