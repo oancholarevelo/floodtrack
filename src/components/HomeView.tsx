@@ -1,3 +1,5 @@
+// src/components/HomeView.tsx
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -142,7 +144,7 @@ export default function HomeView({ location, coordinates }: HomeViewProps) {
   };
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="p-4 space-y-4 pb-24">
       <Card title={`Weather Update (${currentTime})`}>
         {renderWeatherContent()}
       </Card>
