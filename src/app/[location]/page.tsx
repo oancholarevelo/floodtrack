@@ -1,3 +1,5 @@
+// src/app/[location]/page.tsx
+
 "use client";
 
 import { useState, useEffect, Suspense } from 'react';
@@ -74,7 +76,7 @@ function LocationPageContent() {
 
   const mainContainerClass = activeView === 'map'
     ? 'flex-grow'
-    : 'flex-grow overflow-y-auto pb-24';
+    : 'flex-grow overflow-y-auto';
 
   const NavItem = ({ view, icon: Icon, label }: { view: View, icon: React.ElementType, label: string }) => (
     <button
