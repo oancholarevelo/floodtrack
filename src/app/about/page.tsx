@@ -15,7 +15,7 @@ const InfoCard = ({ icon: Icon, title, children }: { icon: React.ElementType, ti
 
 export default function AboutPage() {
   return (
-    <div className="flex flex-col bg-slate-50">
+    <div className="flex flex-col h-screen bg-slate-50">
       <LegalPageHeader title="About FloodTrack" />
       <main className="flex-grow overflow-y-auto p-4 md:p-6">
         <div className="text-center bg-cyan-600 text-white p-8 rounded-xl mb-6">

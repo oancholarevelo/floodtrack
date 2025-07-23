@@ -73,8 +73,8 @@ function LocationPageContent() {
   };
 
   const mainContainerClass = activeView === 'map'
-    ? 'flex-1' // Use flex-1 to fill available space
-    : 'flex-1 overflow-y-auto'; // Use flex-1 and allow scrolling
+    ? 'flex-grow'
+    : 'flex-grow overflow-y-auto pb-24';
 
   const NavItem = ({ view, icon: Icon, label }: { view: View, icon: React.ElementType, label: string }) => (
     <button
@@ -90,7 +90,7 @@ function LocationPageContent() {
 
   return (
     <div className="flex flex-col h-screen relative">
-      <header className="bg-white px-4 py-2 pt-[calc(0.5rem+env(safe-area-inset-top))] z-20 flex-shrink-0 flex items-center justify-start border-b border-slate-100">
+      <header className="bg-white px-4 py-2 pt-[calc(0.5rem+env(safe-area-inset-top))] z-[2000] sticky top-0 flex items-center justify-start border-b border-slate-100">
         <div className="flex items-center space-x-3">
           <Image src="/logo.png" alt="FloodTrack Logo" width={40} height={40} priority />
           <div>
@@ -108,7 +108,7 @@ function LocationPageContent() {
         {activeView === 'list' && <ListView location={location} onViewOnMap={handleViewOnMap} userLocation={userLocation} />}
       </main>
 
-      <footer className="flex-shrink-0 z-20 bg-transparent">
+      <footer className="fixed bottom-0 left-0 right-0 z-[2000] bg-transparent">
         <div className="max-w-md mx-auto p-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
           <nav className="flex justify-around bg-white/80 backdrop-blur-lg rounded-2xl shadow-t-lg border border-slate-100 overflow-hidden h-16">
             <NavItem view="home" icon={Home} label="Home" />
