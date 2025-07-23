@@ -8,7 +8,7 @@ import { db } from '../lib/firebase.js';
 import { collection, onSnapshot, addDoc, GeoPoint, Timestamp, serverTimestamp, query, where } from 'firebase/firestore';
 import ReportFloodModal from './ReportFloodModal';
 import AddSafeAreaModal, { SafeAreaData } from './AddSafeAreaModal';
-import { Target, X, Check, ShieldCheck, Siren, ShieldPlus, LocateFixed, MapPin } from 'lucide-react';
+import { Target, X, Check, ShieldCheck, Siren, ShieldPlus, LocateFixed, MapPin, AlertTriangle } from 'lucide-react';
 
 // Fix for default marker icon issue
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -29,6 +29,7 @@ interface FloodReportDoc {
     level: FloodLevel;
     location: GeoPoint;
     createdAt: Timestamp;
+    status: 'active' | 'subsided' | 'pending_deletion';
 }
 
 interface EvacuationCenterDoc {
@@ -36,22 +37,24 @@ interface EvacuationCenterDoc {
     name: string;
     location: GeoPoint;
     capacity?: number;
-    status?: string;
+    status?: 'Open' | 'Full' | 'Closed' | 'pending_deletion';
     createdAt: Timestamp;
 }
 
-const createFloodIcon = (level: FloodLevel) => {
+const createFloodIcon = (level: FloodLevel, isPendingDeletion: boolean) => {
     const colors: Record<FloodLevel, string> = {
         'Ankle-deep': '#facc15', 'Knee-deep': '#fb923c', 'Waist-deep': '#f87171',
     };
-    const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${colors[level]}" width="40px" height="40px" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5" fill="white" fill-opacity="0.7"/></svg>`;
+    const opacity = isPendingDeletion ? '0.5' : '1';
+    const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${colors[level]}" opacity="${opacity}" width="40px" height="40px" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5" fill="white" fill-opacity="0.7"/></svg>`;
     return L.divIcon({ html: svgIcon, className: 'custom-flood-icon', iconSize: [40, 40], iconAnchor: [20, 40], popupAnchor: [0, -40] });
 };
 
-const evacuationCenterIcon = L.divIcon({
-    html: `<div style="background-color: #16a34a; width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.3); border: 2px solid white;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></div>`,
-    className: 'custom-evacuation-icon', iconSize: [32, 32], iconAnchor: [16, 16],
-});
+const createEvacuationCenterIcon = (isPendingDeletion: boolean) => {
+    const opacity = isPendingDeletion ? '0.5' : '1';
+    const html = `<div style="background-color: #16a34a; opacity: ${opacity}; width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.3); border: 2px solid white;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></div>`;
+    return L.divIcon({ html, className: 'custom-evacuation-icon', iconSize: [32, 32], iconAnchor: [16, 16] });
+}
 
 
 function LocateControl() {
@@ -238,14 +241,14 @@ export default function MapView({ location, mapCenter, onEditFromMap }: MapViewP
     const initialPosition: L.LatLngExpression = mapCenter ? [mapCenter.lat, mapCenter.lng] : (locationCoordinates[location.toLowerCase()] || [14.7739, 121.1390]);
 
     useEffect(() => {
-        const reportsQuery = query(collection(db, 'flood_reports'), where('status', '==', 'active'));
+        const reportsQuery = query(collection(db, 'flood_reports'), where('status', 'in', ['active', 'pending_deletion']));
         const unsubReports = onSnapshot(reportsQuery, (snapshot) => {
             const reportsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FloodReportDoc));
             setFloodReports(reportsData);
         });
 
-        const centersCollection = collection(db, 'evacuation_centers');
-        const unsubCenters = onSnapshot(centersCollection, (snapshot) => {
+        const centersQuery = query(collection(db, 'evacuation_centers'));
+        const unsubCenters = onSnapshot(centersQuery, (snapshot) => {
             const centersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EvacuationCenterDoc));
             setEvacuationCenters(centersData);
         });
@@ -293,6 +296,13 @@ export default function MapView({ location, mapCenter, onEditFromMap }: MapViewP
         return interval + " days ago";
     };
 
+    const DeletionBannerPopup = () => (
+        <div className="mt-2 p-1.5 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded-md flex items-center">
+            <AlertTriangle size={14} className="mr-2" />
+            Pending Deletion
+        </div>
+    );
+
     return (
         <div className="h-full w-full relative">
             <MapContainer center={initialPosition} zoom={14} style={{ height: '100%', width: '100%' }} zoomControl={false}>
@@ -301,23 +311,25 @@ export default function MapView({ location, mapCenter, onEditFromMap }: MapViewP
                 <MapFocusController center={mapCenter} />
 
                 {evacuationCenters.map(center => (
-                    <Marker key={center.id} position={[center.location.latitude, center.location.longitude]} icon={evacuationCenterIcon}>
+                    <Marker key={center.id} position={[center.location.latitude, center.location.longitude]} icon={createEvacuationCenterIcon(center.status === 'pending_deletion')}>
                         <Popup>
                             <div className="font-bold text-md text-slate-800 flex items-center"><ShieldCheck size={18} className="mr-2 text-green-600"/>{center.name}</div>
+                            {center.status === 'pending_deletion' && <DeletionBannerPopup />}
                             <div className="mt-2 space-y-1">
                                 <div>Status: <span className="font-semibold text-green-600">{center.status || 'N/A'}</span></div>
                                 <div>Capacity: {center.capacity || 'N/A'}</div>
                             </div>
-                            <button onClick={onEditFromMap} className="w-full mt-2 text-sm text-cyan-600 font-semibold p-2 rounded-lg hover:bg-cyan-50">Edit Details</button>
+                            <button onClick={onEditFromMap} className="w-full mt-2 text-sm text-cyan-600 font-semibold p-2 rounded-lg hover:bg-cyan-50">View Details</button>
                         </Popup>
                     </Marker>
                 ))}
                 {floodReports.map(report => (
-                    <Marker key={report.id} position={[report.location.latitude, report.location.longitude]} icon={createFloodIcon(report.level)}>
+                    <Marker key={report.id} position={[report.location.latitude, report.location.longitude]} icon={createFloodIcon(report.level, report.status === 'pending_deletion')}>
                         <Popup>
                             <div className="font-bold text-lg">{report.level}</div>
+                            {report.status === 'pending_deletion' && <DeletionBannerPopup />}
                             <div className="text-slate-500">Reported: {formatTimeAgo(report.createdAt)}</div>
-                            <button onClick={onEditFromMap} className="w-full mt-2 text-sm text-cyan-600 font-semibold p-2 rounded-lg hover:bg-cyan-50">Edit Details</button>
+                            <button onClick={onEditFromMap} className="w-full mt-2 text-sm text-cyan-600 font-semibold p-2 rounded-lg hover:bg-cyan-50">View Details</button>
                         </Popup>
                     </Marker>
                 ))}

@@ -4,8 +4,8 @@
 
 import { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
-import { collection, onSnapshot, doc, deleteDoc, GeoPoint, Timestamp, query, where } from 'firebase/firestore';
-import { Siren, ShieldCheck, MapPin, Users, Activity, Edit, Trash2, Eye, Clock, Navigation } from 'lucide-react';
+import { collection, onSnapshot, doc, updateDoc, GeoPoint, Timestamp, query, where, getDocs, writeBatch } from 'firebase/firestore';
+import { Siren, ShieldCheck, MapPin, Users, Activity, Edit, Trash2, Eye, Clock, Navigation, AlertTriangle } from 'lucide-react';
 import UpdateSafeAreaModal from './UpdateSafeAreaModal';
 import UpdateFloodReportModal from './UpdateFloodReportModal';
 
@@ -13,7 +13,7 @@ export interface FloodReportDoc {
     id: string;
     level: 'Ankle-deep' | 'Knee-deep' | 'Waist-deep';
     location: GeoPoint;
-    status: 'active' | 'subsided';
+    status: 'active' | 'subsided' | 'pending_deletion';
     createdAt: Timestamp;
     updatedAt?: Timestamp;
     distance?: number;
@@ -24,8 +24,9 @@ export interface EvacuationCenterDoc {
     name: string;
     location: GeoPoint;
     capacity?: number;
-    status?: 'Open' | 'Full' | 'Closed';
+    status?: 'Open' | 'Full' | 'Closed' | 'pending_deletion';
     createdAt: Timestamp;
+    updatedAt?: Timestamp;
     distance?: number;
 }
 
@@ -37,17 +38,13 @@ interface ListViewProps {
 
 type ListTab = 'reports' | 'safeAreas';
 
-// Haversine formula to calculate distance between two lat/lng points in kilometers
 const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-    const R = 6371; // Radius of the Earth in km
+    const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c; // Distance in km
+    return R * c;
 };
 
 const locationCoordinates: { [key: string]: { lat: number; lng: number } } = {
@@ -55,7 +52,6 @@ const locationCoordinates: { [key: string]: { lat: number; lng: number } } = {
   'sanmateo': { lat: 14.6939, lng: 121.1169 },
   'marikina': { lat: 14.6331, lng: 121.0993 },
 };
-
 
 export default function ListView({ location, onViewOnMap, userLocation }: ListViewProps) {
     const [activeTab, setActiveTab] = useState<ListTab>('reports');
@@ -68,27 +64,51 @@ export default function ListView({ location, onViewOnMap, userLocation }: ListVi
 
     useEffect(() => {
         const center = userLocation || locationCoordinates[location.toLowerCase()] || locationCoordinates['montalban'];
+        const twoDaysAgo = Timestamp.fromDate(new Date(Date.now() - 2 * 24 * 60 * 60 * 1000));
 
-        const floodQuery = query(collection(db, 'flood_reports'), where('status', '==', 'active'));
-        const unsubscribeFloods = onSnapshot(floodQuery, (snapshot) => {
-            const reports = snapshot.docs.map(doc => {
-                const data = { id: doc.id, ...doc.data() } as FloodReportDoc;
-                const distance = getDistance(center.lat, center.lng, data.location.latitude, data.location.longitude);
-                return { ...data, distance };
+        const cleanupStaleItems = async (collectionName: string, statusField: string, validStatuses: string[]) => {
+            const q = query(
+                collection(db, collectionName),
+                where(statusField, 'in', validStatuses)
+            );
+            const snapshot = await getDocs(q);
+            const batch = writeBatch(db);
+            snapshot.docs.forEach(doc => {
+                const data = doc.data();
+                const lastUpdated = data.updatedAt || data.createdAt;
+                if (lastUpdated && lastUpdated < twoDaysAgo) {
+                    batch.update(doc.ref, { status: 'pending_deletion' });
+                }
             });
-            reports.sort((a, b) => a.distance - b.distance);
-            setFloodReports(reports);
-        });
+            if (!snapshot.empty) {
+                await batch.commit();
+            }
+        };
 
-        const unsubscribeCenters = onSnapshot(collection(db, 'evacuation_centers'), (snapshot) => {
-            const centers = snapshot.docs.map(doc => {
-                const data = { id: doc.id, ...doc.data() } as EvacuationCenterDoc;
-                const distance = getDistance(center.lat, center.lng, data.location.latitude, data.location.longitude);
-                return { ...data, distance };
+        const setupListeners = () => {
+            cleanupStaleItems('flood_reports', 'status', ['active']);
+            cleanupStaleItems('evacuation_centers', 'status', ['Open', 'Full', 'Closed']);
+
+            const floodQuery = query(collection(db, 'flood_reports'), where('status', 'in', ['active', 'pending_deletion']));
+            const unsubscribeFloods = onSnapshot(floodQuery, (snapshot) => {
+                const reports = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), distance: getDistance(center.lat, center.lng, doc.data().location.latitude, doc.data().location.longitude) } as FloodReportDoc));
+                // FIX: Handle potentially undefined distances when sorting
+                reports.sort((a, b) => (a.distance ?? 0) - (b.distance ?? 0));
+                setFloodReports(reports);
             });
-            centers.sort((a, b) => a.distance - b.distance);
-            setSafeAreas(centers);
-        });
+
+            const safeAreasQuery = query(collection(db, 'evacuation_centers'));
+            const unsubscribeCenters = onSnapshot(safeAreasQuery, (snapshot) => {
+                const centers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), distance: getDistance(center.lat, center.lng, doc.data().location.latitude, doc.data().location.longitude) } as EvacuationCenterDoc));
+                // FIX: Handle potentially undefined distances when sorting
+                centers.sort((a, b) => (a.distance ?? 0) - (b.distance ?? 0));
+                setSafeAreas(centers);
+            });
+
+            return { unsubscribeFloods, unsubscribeCenters };
+        };
+
+        const { unsubscribeFloods, unsubscribeCenters } = setupListeners();
 
         return () => {
             unsubscribeFloods();
@@ -96,18 +116,14 @@ export default function ListView({ location, onViewOnMap, userLocation }: ListVi
         };
     }, [location, userLocation]);
 
-    const handleDeleteFloodReport = async (id: string) => {
-        if (window.confirm("Are you sure you want to permanently delete this flood report?")) {
-            await deleteDoc(doc(db, 'flood_reports', id));
+    const handleRequestDeletion = async (collectionName: string, id: string) => {
+        if (window.confirm("Are you sure you want to request deletion for this item? An admin will review this request.")) {
+            const docRef = doc(db, collectionName, id);
+            await updateDoc(docRef, { status: 'pending_deletion' });
         }
     };
-
-    const handleDeleteSafeArea = async (id: string) => {
-        if (window.confirm("Are you sure you want to permanently remove this safe area?")) {
-            await deleteDoc(doc(db, 'evacuation_centers', id));
-        }
-    };
-
+    
+    // FIX: Ensure these handlers are defined within the component
     const handleOpenUpdateModal = (safeArea: EvacuationCenterDoc) => {
         setSelectedSafeArea(safeArea);
         setIsUpdateModalOpen(true);
@@ -139,6 +155,13 @@ export default function ListView({ location, onViewOnMap, userLocation }: ListVi
         </button>
     );
 
+    const DeletionBanner = () => (
+        <div className="mt-2 p-2 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded-md flex items-center">
+            <AlertTriangle size={14} className="mr-2" />
+            Pending Deletion
+        </div>
+    );
+
     return (
         <div className="h-full w-full flex flex-col relative">
             <div className="p-4 bg-white border-b border-slate-100 sticky top-0 z-10">
@@ -152,7 +175,7 @@ export default function ListView({ location, onViewOnMap, userLocation }: ListVi
                 {activeTab === 'reports' && (
                     <div className="space-y-4">
                         {floodReports.length > 0 ? floodReports.map(report => (
-                            <div key={report.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-md transition-all hover:shadow-lg">
+                            <div key={report.id} className={`bg-white p-4 rounded-xl border border-slate-200 shadow-md transition-all hover:shadow-lg ${report.status === 'pending_deletion' ? 'opacity-60' : ''}`}>
                                 <div className="flex justify-between items-start">
                                     <div className="flex-grow min-w-0">
                                         <span className={`inline-block px-3 py-1 text-xs font-semibold rounded-full ${
@@ -176,15 +199,16 @@ export default function ListView({ location, onViewOnMap, userLocation }: ListVi
                                                 {report.updatedAt ? `Updated ${formatTimeAgo(report.updatedAt)}` : `Reported ${formatTimeAgo(report.createdAt)}`}
                                             </span>
                                         </div>
+                                         {report.status === 'pending_deletion' && <DeletionBanner />}
                                     </div>
                                     <div className="flex items-center space-x-2 flex-shrink-0 pl-2">
                                         <button onClick={() => onViewOnMap({ lat: report.location.latitude, lng: report.location.longitude })} className="text-cyan-600 hover:text-cyan-800 p-2 rounded-full hover:bg-cyan-50 transition-colors">
                                             <Eye size={18} />
                                         </button>
-                                        <button onClick={() => handleOpenFloodUpdateModal(report)} className="text-slate-500 hover:text-slate-800 p-2 rounded-full hover:bg-slate-100 transition-colors">
+                                        <button onClick={() => handleOpenFloodUpdateModal(report)} className="text-slate-500 hover:text-slate-800 p-2 rounded-full hover:bg-slate-100 transition-colors" disabled={report.status === 'pending_deletion'}>
                                             <Edit size={18} />
                                         </button>
-                                        <button onClick={() => handleDeleteFloodReport(report.id)} className="text-red-500 hover:text-red-800 p-2 rounded-full hover:bg-red-50 transition-colors">
+                                        <button onClick={() => handleRequestDeletion('flood_reports', report.id)} className="text-red-500 hover:text-red-800 p-2 rounded-full hover:bg-red-50 transition-colors" disabled={report.status === 'pending_deletion'}>
                                             <Trash2 size={18} />
                                         </button>
                                     </div>
@@ -196,7 +220,7 @@ export default function ListView({ location, onViewOnMap, userLocation }: ListVi
                 {activeTab === 'safeAreas' && (
                     <div className="space-y-4">
                         {safeAreas.length > 0 ? safeAreas.map(area => (
-                            <div key={area.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-md transition-all hover:shadow-lg">
+                            <div key={area.id} className={`bg-white p-4 rounded-xl border border-slate-200 shadow-md transition-all hover:shadow-lg ${area.status === 'pending_deletion' ? 'opacity-60' : ''}`}>
                                 <div className="flex justify-between items-start">
                                     <div className="flex-grow min-w-0">
                                         <p className="font-bold text-lg text-slate-800">{area.name}</p>
@@ -210,15 +234,16 @@ export default function ListView({ location, onViewOnMap, userLocation }: ListVi
                                             <span className="flex items-center"><Activity size={14} className="mr-1.5 text-slate-400" /> Status: <span className="font-semibold ml-1">{area.status}</span></span>
                                             <span className="flex items-center"><Users size={14} className="mr-1.5 text-slate-400" /> Capacity: <span className="font-semibold ml-1">{area.capacity || 'N/A'}</span></span>
                                         </div>
+                                         {area.status === 'pending_deletion' && <DeletionBanner />}
                                     </div>
                                     <div className="flex items-center space-x-2 flex-shrink-0 pl-2">
                                         <button onClick={() => onViewOnMap({ lat: area.location.latitude, lng: area.location.longitude })} className="text-cyan-600 hover:text-cyan-800 p-2 rounded-full hover:bg-cyan-50 transition-colors">
                                             <Eye size={18} />
                                         </button>
-                                        <button onClick={() => handleOpenUpdateModal(area)} className="text-slate-500 hover:text-slate-800 p-2 rounded-full hover:bg-slate-100 transition-colors">
+                                        <button onClick={() => handleOpenUpdateModal(area)} className="text-slate-500 hover:text-slate-800 p-2 rounded-full hover:bg-slate-100 transition-colors" disabled={area.status === 'pending_deletion'}>
                                             <Edit size={18} />
                                         </button>
-                                        <button onClick={() => handleDeleteSafeArea(area.id)} className="text-red-500 hover:text-red-800 p-2 rounded-full hover:bg-red-50 transition-colors">
+                                        <button onClick={() => handleRequestDeletion('evacuation_centers', area.id)} className="text-red-500 hover:text-red-800 p-2 rounded-full hover:bg-red-50 transition-colors" disabled={area.status === 'pending_deletion'}>
                                             <Trash2 size={18} />
                                         </button>
                                     </div>

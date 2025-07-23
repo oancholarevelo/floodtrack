@@ -1,16 +1,18 @@
+// src/components/AidView.tsx
+
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react'; // Removed unused useCallback
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { Search, PlusCircle, Clock, MapPin, CheckCircle, Heart, HandHelping, Siren, Navigation } from 'lucide-react';
+import { Search, PlusCircle, Clock, MapPin, CheckCircle, Heart, HandHelping, Siren, Navigation, AlertTriangle } from 'lucide-react';
 import { db } from '../lib/firebase';
-import { collection, onSnapshot, Timestamp, addDoc, serverTimestamp, query, orderBy, GeoPoint } from 'firebase/firestore';
+import { collection, onSnapshot, Timestamp, addDoc, serverTimestamp, query, orderBy, GeoPoint, where, getDocs, writeBatch } from 'firebase/firestore';
 import AidDetailsModal from './AidDetailsModal';
 
 // Interfaces
 export type AidTab = 'requests' | 'offers';
 export type OfferType = 'Food/Water' | 'Transport' | 'Shelter' | 'Volunteer' | 'Other';
-export type AidStatus = 'active' | 'helped' | 'help given';
+export type AidStatus = 'active' | 'helped' | 'help given' | 'pending_deletion';
 
 export interface AidPostData {
     type: AidTab;
@@ -44,15 +46,41 @@ export default function AidView({ location }: { location: string }) {
     const [isSendingSOS, setIsSendingSOS] = useState(false);
 
     useEffect(() => {
+        const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+
+        const cleanupOldPosts = async (collectionName: string) => {
+            try {
+                const q = query(
+                    collection(db, collectionName),
+                    where('status', '==', 'active'),
+                    where('createdAt', '<', Timestamp.fromDate(twoDaysAgo))
+                );
+                const snapshot = await getDocs(q);
+                if (snapshot.empty) return;
+
+                const batch = writeBatch(db);
+                snapshot.docs.forEach(doc => {
+                    batch.update(doc.ref, { status: 'pending_deletion' });
+                });
+                await batch.commit();
+            } catch (error) {
+                console.error(`Failed to clean up old posts in ${collectionName}:`, error);
+            }
+        };
+
         const createListener = (collectionName: string, setter: React.Dispatch<React.SetStateAction<AidItemDoc[]>>) => {
-            const q = query(collection(db, collectionName), orderBy('createdAt', 'desc'));
+            cleanupOldPosts(collectionName);
+            // FIX: This query now excludes items pending deletion from the view
+            const q = query(collection(db, collectionName), where('status', '!=', 'pending_deletion'), orderBy('status'), orderBy('createdAt', 'desc'));
             return onSnapshot(q, (snapshot) => {
                 const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AidItemDoc));
                 setter(data);
             });
         };
+
         const unsubRequests = createListener('aid_requests', setAidRequests);
         const unsubOffers = createListener('aid_offers', setAidOffers);
+
         return () => {
             unsubRequests();
             unsubOffers();
@@ -96,7 +124,7 @@ export default function AidView({ location }: { location: string }) {
                     await addDoc(collection(db, 'aid_requests'), newPost);
                     alert("SOS signal sent successfully. Your request is now at the top of the list.");
                 } catch (error) {
-                    console.error("Firebase post error:", error); // Use the error variable
+                    console.error("Firebase post error:", error);
                     alert("Failed to send SOS. Please try again.");
                 } finally {
                     setIsSendingSOS(false);
@@ -104,7 +132,7 @@ export default function AidView({ location }: { location: string }) {
             },
             (error) => {
                 setIsSendingSOS(false);
-                console.error("Geolocation error:", error); // Use the error variable
+                console.error("Geolocation error:", error);
                 alert("Could not get your location. Please enable location services and try again.");
             },
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
@@ -146,13 +174,41 @@ export default function AidView({ location }: { location: string }) {
             item.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
             item.offerType?.toLowerCase().includes(searchTerm.toLowerCase())
         ), [aidOffers, searchTerm]);
+    
+    const StatusBanner = ({ status }: { status: AidStatus }) => {
+        if (status === 'active') return null;
+
+        const bannerConfig: { [key in AidStatus]?: { text: string; color: string } } = {
+            helped: { text: 'Request Fulfilled', color: 'green' },
+            'help given': { text: 'Help Provided', color: 'green' },
+            pending_deletion: { text: 'Pending Deletion', color: 'yellow' },
+        };
+
+        const config = bannerConfig[status];
+        if (!config) return null;
+
+        const colorClasses: { [key: string]: string } = {
+            green: 'bg-green-100 text-green-600',
+            yellow: 'bg-yellow-100 text-yellow-800'
+        };
+
+        const Icon = status === 'pending_deletion' ? AlertTriangle : CheckCircle;
+
+        return (
+            <div className={`mt-4 text-center text-sm font-semibold ${colorClasses[config.color]} py-2 rounded-lg flex items-center justify-center space-x-2`}>
+                <Icon size={16} />
+                <span>{config.text}</span>
+            </div>
+        );
+    };
 
     const AidCard = (item: AidItemDoc) => {
         const isSOS = item.isSOS === true;
+        const isPendingDeletion = item.status === 'pending_deletion';
 
         if (isSOS) {
             return (
-                <div className="rounded-xl shadow-lg bg-white overflow-hidden relative animate-pulse-slow">
+                <div className={`rounded-xl shadow-lg bg-white overflow-hidden relative ${isPendingDeletion ? 'opacity-60' : 'animate-pulse-slow'}`}>
                     <div className="absolute left-0 top-0 bottom-0 w-2 bg-red-600"></div>
                     <div className="p-4 pl-6">
                         <div className="flex justify-between items-start mb-2">
@@ -174,17 +230,24 @@ export default function AidView({ location }: { location: string }) {
                             )}
                         </div>
                         <p className="text-sm text-slate-700 mb-4">{item.details}</p>
-                        <div className="flex flex-col sm:flex-row gap-2">
-                            {item.coordinates && (
-                                <a href={`https://www.google.com/maps/dir/?api=1&destination=${item.coordinates.latitude},${item.coordinates.longitude}`} target="_blank" rel="noopener noreferrer" className="flex-1 text-center bg-red-600 text-white font-bold py-2.5 px-4 rounded-lg hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 flex items-center justify-center space-x-2">
-                                    <Navigation size={16} />
-                                    <span>Get Directions</span>
-                                </a>
-                            )}
-                            <button onClick={() => handleViewDetails(item)} className="flex-1 text-center bg-white text-red-600 font-semibold py-2.5 px-4 rounded-lg hover:bg-red-50 transition-colors border-2 border-red-600">
-                                View Details
-                            </button>
-                        </div>
+                        {isPendingDeletion ? <StatusBanner status="pending_deletion" /> : (
+                            <div className="flex flex-col sm:flex-row gap-2">
+                                {item.coordinates && (
+                                    <a 
+                                        href={`https://www.google.com/maps/dir/?api=1&destination=${item.coordinates.latitude},${item.coordinates.longitude}`} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer" 
+                                        className="flex-1 text-center bg-red-600 text-white font-bold py-2.5 px-4 rounded-lg hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 flex items-center justify-center space-x-2"
+                                    >
+                                        <Navigation size={16} />
+                                        <span>Get Directions</span>
+                                    </a>
+                                )}
+                                <button onClick={() => handleViewDetails(item)} className="flex-1 text-center bg-white text-red-600 font-semibold py-2.5 px-4 rounded-lg hover:bg-red-50 transition-colors border-2 border-red-600">
+                                    View Details
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             );
@@ -201,10 +264,11 @@ export default function AidView({ location }: { location: string }) {
                     <div className="flex items-center space-x-1.5"><Clock size={14} /><span>{formatTimeAgo(item.createdAt)}</span></div>
                 </div>
                 <p className="text-slate-600 text-sm mt-3 h-10 overflow-hidden line-clamp-2">{item.details}</p>
-                {item.status !== 'active' ? (
-                    <div className="mt-4 text-center text-sm font-semibold text-green-600 bg-green-100 py-2 rounded-lg flex items-center justify-center space-x-2"><CheckCircle size={16} /><span>{item.status === 'helped' ? 'Request Fulfilled' : 'Help Provided'}</span></div>
-                ) : (
+                
+                {item.status === 'active' ? (
                     <button onClick={() => handleViewDetails(item)} className="mt-4 w-full bg-cyan-600 text-white font-semibold py-2.5 rounded-lg hover:bg-cyan-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500">View Details</button>
+                ) : (
+                    <StatusBanner status={item.status} />
                 )}
             </div>
         );
@@ -219,14 +283,26 @@ export default function AidView({ location }: { location: string }) {
     const currentList = activeTab === 'requests' ? filteredRequests : filteredOffers;
 
     return (
-        <div className="h-full w-full flex flex-col relative">
+        <div className="h-full w-full flex flex-col relative overflow-y-auto">
             <div className="p-4 bg-white border-b border-slate-100 sticky top-0 z-10">
                 <div className="flex bg-slate-100 rounded-full p-1 mb-4"><TabButton tab="requests" label="Need Help" icon={<HandHelping size={16} />} /><TabButton tab="offers" label="Offer Help" icon={<Heart size={16} />} /></div>
-                <div className="relative"><input type="text" placeholder={`Search in ${activeTab}...`} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-full focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-shadow" /><Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={20} /></div>
+                <div className="relative">
+                    <input type="text" placeholder={`Search in ${activeTab}...`} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-full focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-shadow" />
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                </div>
             </div>
-            <div className="flex-grow overflow-y-auto p-4">
-                {currentList.length > 0 ? (<div className="space-y-4">{currentList.map(item => <AidCard key={item.id} {...item} />)}</div>) : (<div className="text-center py-16 text-slate-500"><h3 className="font-semibold text-lg">No {activeTab} found</h3><p className="text-sm">There are currently no posts in this category.</p></div>)}
+
+            <div className="flex-grow p-4 pb-24">
+                {currentList.length > 0 ? (
+                    <div className="space-y-4">{currentList.map(item => <AidCard key={item.id} {...item} />)}</div>
+                ) : (
+                    <div className="text-center py-16 text-slate-500">
+                        <h3 className="font-semibold text-lg">No {activeTab} found</h3>
+                        <p className="text-sm">There are currently no posts in this category.</p>
+                    </div>
+                )}
             </div>
+
             <div className="fixed bottom-24 right-4 z-[2001] flex flex-col items-end space-y-3">
                  <button onClick={handleSOSClick} disabled={isSendingSOS} className="bg-red-600 text-white font-bold py-3 px-5 rounded-full shadow-lg hover:bg-red-700 flex items-center space-x-2 transition-all duration-200 hover:scale-105 disabled:bg-red-400 disabled:cursor-not-allowed">
                     <Siren size={20} /><span>{isSendingSOS ? 'Sending...' : 'SOS'}</span>
@@ -235,6 +311,7 @@ export default function AidView({ location }: { location: string }) {
                     <PlusCircle size={20} /><span>New Post</span>
                 </Link>
             </div>
+            
             <MemoizedAidDetailsModal isOpen={isDetailsModalOpen} onClose={() => setIsDetailsModalOpen(false)} item={selectedAidItem} />
         </div>
     );
