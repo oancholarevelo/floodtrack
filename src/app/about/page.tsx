@@ -17,8 +17,7 @@ export default function AboutPage() {
   return (
     <div className="flex flex-col h-screen bg-slate-50">
       <LegalPageHeader title="About FloodTrack" />
-      <main className="flex-1 overflow-y-auto mobile-scroll-container">
-        <div className="p-4 md:p-6 pb-8">
+      <main className="flex-grow overflow-y-auto p-4 md:p-6">
         <div className="text-center bg-cyan-600 text-white p-8 rounded-xl mb-6">
             <h1 className="text-3xl font-bold mb-2">Connecting Communities, Ensuring Safety</h1>
             <p className="max-w-2xl mx-auto">
@@ -53,7 +52,6 @@ export default function AboutPage() {
                   FloodTrack relies on user-submitted data. While we strive to maintain accuracy, all information should be cross-verified with official government advisories. This app is intended as a supplementary tool, not a replacement for official emergency services.
                 </p>
             </InfoCard>
-        </div>
         </div>
       </main>
     </div>

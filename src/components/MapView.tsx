@@ -305,13 +305,7 @@ export default function MapView({ location, mapCenter, onEditFromMap }: MapViewP
 
     return (
         <div className="h-full w-full relative">
-            <MapContainer 
-                center={initialPosition} 
-                zoom={14} 
-                style={{ height: '100%', width: '100%', minHeight: '400px' }} 
-                zoomControl={false}
-                className="leaflet-container-mobile"
-            >
+            <MapContainer center={initialPosition} zoom={14} style={{ height: '100%', width: '100%' }} zoomControl={false}>
                 <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
                 
                 <MapFocusController center={mapCenter} />

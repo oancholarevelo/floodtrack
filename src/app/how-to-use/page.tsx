@@ -23,8 +23,7 @@ export default function HowToUsePage() {
   return (
     <div className="flex flex-col h-screen bg-slate-50">
       <LegalPageHeader title="How to Use" />
-      <main className="flex-1 overflow-y-auto mobile-scroll-container">
-        <div className="p-4 md:p-6 pb-8">
+      <main className="flex-grow overflow-y-auto p-4 md:p-6">
         <div className="bg-cyan-50 border-l-4 border-cyan-500 text-cyan-800 p-4 rounded-r-lg mb-6">
             <h3 className="font-bold">Welcome to FloodTrack!</h3>
             <p className="text-sm">Here’s a quick guide to navigating the app and using its features to stay safe and help your community.</p>
@@ -71,7 +70,6 @@ export default function HowToUsePage() {
                 title="Add a Safe Area"
                 description="On the Map, tap 'Add Safe Area', pin the location, and add details like name and capacity."
             />
-        </div>
         </div>
       </main>
     </div>

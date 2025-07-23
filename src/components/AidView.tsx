@@ -284,21 +284,15 @@ export default function AidView({ location }: { location: string }) {
 
     return (
         <div className="h-full w-full flex flex-col relative">
-            {/* Sticky Header with Category Buttons and Search */}
-            <div className="flex-shrink-0 p-4 bg-white border-b border-slate-100 sticky top-0 z-30 shadow-sm">
-                <div className="flex bg-slate-100 rounded-full p-1 mb-4">
-                    <TabButton tab="requests" label="Need Help" icon={<HandHelping size={16} />} />
-                    <TabButton tab="offers" label="Offer Help" icon={<Heart size={16} />} />
-                </div>
+            <div className="p-4 bg-white border-b border-slate-100 sticky top-0 z-10">
+                <div className="flex bg-slate-100 rounded-full p-1 mb-4"><TabButton tab="requests" label="Need Help" icon={<HandHelping size={16} />} /><TabButton tab="offers" label="Offer Help" icon={<Heart size={16} />} /></div>
                 <div className="relative">
                     <input type="text" placeholder={`Search in ${activeTab}...`} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-full focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-shadow" />
                     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
                 </div>
             </div>
 
-            {/* Scrollable Content Area */}
-            <div className="flex-1 overflow-y-auto mobile-scroll-container" style={{ height: 'calc(100% - 140px)' }}>
-                <div className="p-4 pb-24">
+            <div className="flex-grow p-4 pb-24">
                 {currentList.length > 0 ? (
                     <div className="space-y-4">{currentList.map(item => <AidCard key={item.id} {...item} />)}</div>
                 ) : (
@@ -307,7 +301,6 @@ export default function AidView({ location }: { location: string }) {
                         <p className="text-sm">There are currently no posts in this category.</p>
                     </div>
                 )}
-                </div>
             </div>
 
             <div className="fixed bottom-24 right-4 z-[2001] flex flex-col items-end space-y-3">

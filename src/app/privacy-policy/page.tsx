@@ -15,8 +15,7 @@ export default function PrivacyPolicyPage() {
   return (
     <div className="flex flex-col h-screen bg-white">
       <LegalPageHeader title="Privacy Policy" />
-      <main className="flex-1 overflow-y-auto mobile-scroll-container">
-        <div className="p-6 md:p-8 pb-8">
+      <main className="flex-grow overflow-y-auto p-6 md:p-8">
         <p className="text-sm text-slate-500 mb-6">Last Updated: July 23, 2025</p>
 
         <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
@@ -45,7 +44,6 @@ export default function PrivacyPolicyPage() {
         <Section icon={Trash2} title="Your Rights & Data Deletion">
             <p>You have the right to request the deletion of your posts. Use the delete button on any item to flag it for admin review and permanent removal.</p>
         </Section>
-        </div>
       </main>
     </div>
   );

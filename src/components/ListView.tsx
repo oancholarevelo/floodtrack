@@ -164,17 +164,14 @@ export default function ListView({ location, onViewOnMap, userLocation }: ListVi
 
     return (
         <div className="h-full w-full flex flex-col relative">
-            {/* Sticky Header with Category Buttons */}
-            <div className="flex-shrink-0 p-4 bg-white border-b border-slate-100 sticky top-0 z-30 shadow-sm">
-                <div className="flex bg-slate-100 rounded-full p-1">
+            <div className="p-4 bg-white border-b border-slate-100 sticky top-0 z-10">
+                <div className="flex bg-slate-100 rounded-full p-1 mb-4">
                     <TabButton tab="reports" label="Flood Reports" icon={<Siren size={16} />} />
                     <TabButton tab="safeAreas" label="Safe Areas" icon={<ShieldCheck size={16} />} />
                 </div>
             </div>
 
-            {/* Scrollable Content Area */}
-            <div className="flex-1 overflow-y-auto mobile-scroll-container" style={{ height: 'calc(100% - 88px)' }}>
-                <div className="p-4 pb-24">
+            <div className="flex-grow p-4 pb-24">
                 {activeTab === 'reports' && (
                     <div className="space-y-4">
                         {floodReports.length > 0 ? floodReports.map(report => (
@@ -255,7 +252,6 @@ export default function ListView({ location, onViewOnMap, userLocation }: ListVi
                         )) : <p className="text-sm text-slate-500 p-6 text-center bg-slate-50 rounded-lg border border-dashed">No safe areas listed.</p>}
                     </div>
                 )}
-                </div>
             </div>
 
             {selectedSafeArea && (
