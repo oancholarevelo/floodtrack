@@ -165,7 +165,7 @@ export default function ListView({ location, onViewOnMap, userLocation }: ListVi
     return (
         <div className="h-full w-full flex flex-col relative">
             <div className="p-4 bg-white border-b border-slate-100 sticky top-0 z-10">
-                <div className="flex bg-slate-100 rounded-full p-1 mb-4">
+                <div className="flex bg-slate-100 rounded-full p-1">
                     <TabButton tab="reports" label="Flood Reports" icon={<Siren size={16} />} />
                     <TabButton tab="safeAreas" label="Safe Areas" icon={<ShieldCheck size={16} />} />
                 </div>
