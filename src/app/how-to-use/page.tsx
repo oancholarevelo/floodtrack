@@ -21,7 +21,7 @@ const FeatureCard = ({ icon: Icon, title, description }: { icon: React.ElementTy
 
 export default function HowToUsePage() {
   return (
-    <div className="flex flex-col h-screen bg-slate-50">
+    <div className="flex flex-col bg-slate-50">
       <LegalPageHeader title="How to Use" />
       <main className="flex-grow overflow-y-auto p-4 md:p-6">
         <div className="bg-cyan-50 border-l-4 border-cyan-500 text-cyan-800 p-4 rounded-r-lg mb-6">
