@@ -20,6 +20,7 @@ interface HomeViewProps {
 }
 
 const lguFacebookPages: { [key: string]: { name: string; url: string } } = {
+    'pagasa': { name: "PAGASA", url: "https://www.facebook.com/PAGASA.DOST.GOV.PH" },
     'montalban': { name: "Bangon Bagong Montalban", url: "https://www.facebook.com/BangonBagongMontalban" },
     'taguig': { name: "I Love Taguig", url: "https://www.facebook.com/taguigcity" },
     'quezoncity': { name: "Quezon City Government", url: "https://www.facebook.com/QCGov" },
@@ -27,8 +28,6 @@ const lguFacebookPages: { [key: string]: { name: string; url: string } } = {
     'marikina': { name: "Marikina PIO", url: "https://www.facebook.com/MarikinaPIO" },
     'default': { name: "NDRRMC", url: "https://www.facebook.com/NDRRMC" }
 };
-
-const rizalLocations = ['montalban', 'san mateo'];
 
 const Card: React.FC<{children: React.ReactNode, className?: string, title: string}> = ({ children, className, title }) => (
     <div className={`bg-white p-4 rounded-xl border border-slate-100 shadow-sm ${className}`}>
@@ -53,8 +52,24 @@ export default function HomeView({ location, coordinates }: HomeViewProps) {
   const [weatherError, setWeatherError] = useState<string | null>(null);
 
   const currentLocation = location.toLowerCase();
-  const isRizalLocation = rizalLocations.includes(currentLocation);
-  const lguPage = lguFacebookPages[currentLocation] || lguFacebookPages['default'];
+  
+  // Determine which announcement pages to show
+  const announcementOptions = [];
+  const cityPage = lguFacebookPages[currentLocation];
+  const pagasaPage = lguFacebookPages['pagasa'];
+  const ndrrmcPage = lguFacebookPages['default'];
+
+  if (cityPage) {
+    announcementOptions.push(cityPage);
+  } else {
+    announcementOptions.push(ndrrmcPage);
+  }
+  announcementOptions.push(pagasaPage);
+  if (cityPage && cityPage.url !== ndrrmcPage.url) {
+    announcementOptions.push(ndrrmcPage);
+  }
+  
+  const [selectedPage, setSelectedPage] = useState(announcementOptions[0]);
   
   // Use a default coordinate for the Windy map if none are provided
   const displayCoordinates = coordinates || { lat: 14.7169, lon: 121.1244 };
@@ -158,10 +173,25 @@ export default function HomeView({ location, coordinates }: HomeViewProps) {
         </div>
       </Card>
       
-      <Card title={isRizalLocation ? "LGU Announcements" : "National Announcements"}>
+      <Card title="Official Announcements">
+        <div className="flex gap-2 mb-3">
+            {announcementOptions.map((page) => (
+                <button
+                    key={page.name}
+                    onClick={() => setSelectedPage(page)}
+                    className={`flex-1 p-2.5 rounded-lg text-center font-semibold transition-colors duration-200 text-sm truncate ${
+                        selectedPage.url === page.url
+                            ? 'bg-cyan-600 text-white shadow'
+                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`}
+                >
+                    {page.name}
+                </button>
+            ))}
+        </div>
         <div className="w-full h-[600px] bg-slate-100 rounded-lg">
             <iframe 
-                src={`https://www.facebook.com/plugins/page.php?href=${encodeURIComponent(lguPage.url)}&tabs=timeline&height=600&small_header=false&adapt_container_width=true&hide_cover=false&show_facepile=true&appId`}
+                src={`https://www.facebook.com/plugins/page.php?href=${encodeURIComponent(selectedPage.url)}&tabs=timeline&height=600&small_header=false&adapt_container_width=true&hide_cover=false&show_facepile=true&appId`}
                 className="w-full h-full rounded-lg"
                 style={{border:'none', overflow:'hidden'}} 
                 scrolling="no" 
@@ -170,7 +200,7 @@ export default function HomeView({ location, coordinates }: HomeViewProps) {
             </iframe>
         </div>
         <a 
-          href={lguPage.url}
+          href={selectedPage.url}
           target="_blank" 
           rel="noopener noreferrer"
           className="mt-4 w-full bg-cyan-600 text-white font-semibold py-2.5 rounded-lg hover:bg-cyan-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 flex items-center justify-center space-x-2"
